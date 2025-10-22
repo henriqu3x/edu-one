@@ -89,6 +89,9 @@ export const Navbar = () => {
                 <Link to="/explore">Explorar</Link>
               </Button>
               <Button variant="ghost" asChild>
+                <Link to="/forum">Fórum</Link>
+              </Button>
+              <Button variant="ghost" asChild>
                 <Link to="/trails">Trilhas</Link>
               </Button>
               <Button

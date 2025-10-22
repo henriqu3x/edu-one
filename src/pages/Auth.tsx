@@ -80,7 +80,6 @@ export default function Auth() {
             console.error("Error checking ban status:", profileError);
             // If profile doesn't exist, allow login (might be new user)
             if (profileError.code === 'PGRST116') {
-              console.log("Profile not found, allowing login for new user");
             } else {
               toast.error("Erro ao verificar status da conta");
               await supabase.auth.signOut();

@@ -95,7 +95,6 @@ export default function Profile() {
       }
 
       if (data) {
-        console.log("Perfil criado automaticamente:", data);
         setProfile(data);
         toast({
           title: "Perfil criado",
@@ -139,7 +138,6 @@ export default function Profile() {
 
       // Se não encontrou perfil, tenta criar um automaticamente
       if (!data || data.length === 0) {
-        console.log("Perfil não encontrado, tentando criar automaticamente...");
         await createProfileIfNeeded();
         return;
       }
@@ -203,7 +201,7 @@ export default function Profile() {
           course_id,
           courses (
             *,
-            profiles:author_id (username, avatar_url, is_verified_author),
+            profiles:author_id (id, username, avatar_url, is_verified_author),
             categories:category_id (name, icon)
           )
         `)
@@ -214,7 +212,7 @@ export default function Profile() {
         return;
       }
 
-      if (data) setSavedCourses(data.map(s => s.courses).filter(Boolean));
+      if (data) setSavedCourses(data.map(s => s.courses).filter(Boolean).filter(course => course && course.profiles && course.profiles.id));
     } catch (error) {
       console.error("Erro inesperado ao buscar cursos salvos:", error);
     }

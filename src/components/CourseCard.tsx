@@ -100,15 +100,24 @@ export const CourseCard = ({
               {author.username[0].toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <Link
-            to={`/profile/${author.id}`}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            {author.username}
-            {author.is_verified_author && (
-              <Verified className="h-3 w-3 text-primary fill-primary" />
-            )}
-          </Link>
+          {author.id ? (
+            <Link
+              to={`/profile/${author.id}`}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              {author.username}
+              {author.is_verified_author && (
+                <Verified className="h-3 w-3 text-primary fill-primary" />
+              )}
+            </Link>
+          ) : (
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              {author.username}
+              {author.is_verified_author && (
+                <Verified className="h-3 w-3 text-primary fill-primary" />
+              )}
+            </span>
+          )}
         </div>
 
         {/* Rating Display */}

@@ -17,6 +17,9 @@ import TrailDetail from "./pages/TrailDetail";
 import TrailNew from "./pages/TrailNew";
 import Search from "./pages/Search";
 import Explore from "./pages/Explore";
+import Category from "./pages/Category";
+import Forum from "./pages/Forum";
+import ForumTopic from "./pages/ForumTopic";
 import Moderation from "./pages/Moderation";
 import Admin from "./pages/Admin";
 import Terms from "./pages/Terms";
@@ -52,6 +55,9 @@ function AppRoutes() {
         <Route path="/" element={<PageTransition><Index /></PageTransition>} />
         <Route path="/auth" element={<PageTransition><Auth /></PageTransition>} />
         <Route path="/explore" element={<PageTransition><Explore /></PageTransition>} />
+        <Route path="/category/:slug" element={<PageTransition><Category /></PageTransition>} />
+        <Route path="/forum" element={<PageTransition><Forum /></PageTransition>} />
+        <Route path="/forum/:id" element={<PageTransition><ForumTopic /></PageTransition>} />
         <Route path="/search" element={<PageTransition><Search /></PageTransition>} />
         <Route path="/course/new" element={<PageTransition><CourseNew /></PageTransition>} />
         <Route path="/course/:id" element={<PageTransition><CourseDetail /></PageTransition>} />

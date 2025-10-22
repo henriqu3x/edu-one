@@ -21,12 +21,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Users, BookOpen, Shield, TrendingUp } from "lucide-react";
+import { Users, BookOpen, Shield, TrendingUp, MessageSquare } from "lucide-react";
 
 export default function Admin() {
   const [users, setUsers] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [forumTopics, setForumTopics] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCourses: 0,
@@ -75,7 +76,6 @@ export default function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log("Fetching data...");
 
       // Fetch all profiles
       const { data: profilesData, error: profilesError } = await supabase
@@ -88,7 +88,6 @@ export default function Admin() {
         throw profilesError;
       }
 
-      console.log("Profiles fetched:", profilesData?.length || 0);
 
       // Fetch user roles separately
       const { data: rolesData, error: rolesError } = await supabase
@@ -100,7 +99,6 @@ export default function Admin() {
         throw rolesError;
       }
 
-      console.log("Roles fetched:", rolesData?.length || 0);
 
       // Combine profiles with their roles
       const usersWithRoles = profilesData?.map(profile => ({
@@ -108,7 +106,6 @@ export default function Admin() {
         user_roles: rolesData?.filter(role => role.user_id === profile.id) || []
       })) || [];
 
-      console.log("Users with roles:", usersWithRoles.length);
 
       // Get total users count (all profiles, not just those with roles)
       const { count: totalUsersCount, error: countError } = await supabase
@@ -139,6 +136,16 @@ export default function Admin() {
         console.error("Error fetching categories:", categoriesError);
       }
 
+      // Fetch forum topics
+      const { data: forumTopicsData, error: forumTopicsError } = await supabase
+        .from("forum_topics")
+        .select("*, profiles!forum_topics_author_id_fkey(username, full_name)")
+        .order("created_at", { ascending: false });
+
+      if (forumTopicsError) {
+        console.error("Error fetching forum topics:", forumTopicsError);
+      }
+
       // Calculate stats
       const totalViews = coursesData?.reduce((sum, course) => sum + (course.view_count || 0), 0) || 0;
       const pendingCount = coursesData?.filter(c => c.status === "pending").length || 0;
@@ -153,8 +160,8 @@ export default function Admin() {
       setUsers(usersWithRoles);
       if (coursesData) setCourses(coursesData);
       if (categoriesData) setCategories(categoriesData);
+      if (forumTopicsData) setForumTopics(forumTopicsData);
 
-      console.log("Data fetch completed");
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -198,59 +205,50 @@ export default function Admin() {
     if (!confirmed) return;
 
     try {
-      console.log("Attempting to delete course:", courseId);
 
       // First, delete related records that might prevent deletion
-      console.log("Deleting comments...");
       const { error: commentsError } = await supabase
         .from("comments")
         .delete()
         .eq("course_id", courseId);
       if (commentsError) console.error("Comments deletion error:", commentsError);
 
-      console.log("Deleting course ratings...");
       const { error: ratingsError } = await supabase
         .from("course_ratings")
         .delete()
         .eq("course_id", courseId);
       if (ratingsError) console.error("Ratings deletion error:", ratingsError);
 
-      console.log("Deleting course saves...");
       const { error: savesError } = await supabase
         .from("course_saves")
         .delete()
         .eq("course_id", courseId);
       if (savesError) console.error("Saves deletion error:", savesError);
 
-      console.log("Deleting trail courses...");
       const { error: trailError } = await supabase
         .from("trail_courses")
         .delete()
         .eq("course_id", courseId);
       if (trailError) console.error("Trail courses deletion error:", trailError);
 
-      console.log("Deleting course reports...");
       const { error: reportsError } = await supabase
         .from("course_reports")
         .delete()
         .eq("course_id", courseId);
       if (reportsError) console.error("Reports deletion error:", reportsError);
 
-      console.log("Deleting course likes...");
       const { error: likesError } = await supabase
         .from("course_likes")
         .delete()
         .eq("course_id", courseId);
       if (likesError) console.error("Likes deletion error:", likesError);
 
-      console.log("Deleting course views...");
       const { error: viewsError } = await supabase
         .from("course_views")
         .delete()
         .eq("course_id", courseId);
       if (viewsError) console.error("Views deletion error:", viewsError);
 
-      console.log("Deleting moderation logs...");
       const { error: logsError } = await supabase
         .from("moderation_logs")
         .delete()
@@ -258,21 +256,18 @@ export default function Admin() {
       if (logsError) console.error("Logs deletion error:", logsError);
 
       // Now delete the course
-      console.log("Deleting the course itself...");
       const { error, data } = await supabase
         .from("courses")
         .delete()
         .eq("id", courseId)
         .select();
 
-      console.log("Delete result:", { error, data });
 
       if (error) {
         console.error("Supabase error:", error);
         throw error;
       }
 
-      console.log("Course deleted successfully");
       toast({
         title: "Sucesso",
         description: "Curso excluído com sucesso.",
@@ -294,10 +289,8 @@ export default function Admin() {
     if (!confirmed) return;
 
     try {
-      console.log("Attempting to ban user:", userId);
 
       // First, get all courses by this user
-      console.log("Fetching courses by user...");
       const { data: userCourses, error: coursesError } = await supabase
         .from("courses")
         .select("id")
@@ -308,12 +301,10 @@ export default function Admin() {
         throw coursesError;
       }
 
-      console.log("User courses found:", userCourses?.length || 0);
 
       // Delete related data for each course
       if (userCourses && userCourses.length > 0) {
         for (const course of userCourses) {
-          console.log("Deleting data for course:", course.id);
 
           // Delete comments on this course
           const { error: commentsError } = await supabase.from("comments").delete().eq("course_id", course.id);
@@ -349,54 +340,44 @@ export default function Admin() {
         }
 
         // Delete all courses by this user
-        console.log("Deleting all courses by user...");
         const { error: deleteCoursesError } = await supabase.from("courses").delete().eq("author_id", userId);
         if (deleteCoursesError) {
           console.error("Error deleting user courses:", deleteCoursesError);
           throw deleteCoursesError;
         }
-        console.log("Courses deleted successfully");
       }
 
       // Delete comments made by this user
-      console.log("Deleting comments by user...");
       const { error: userCommentsError } = await supabase.from("comments").delete().eq("user_id", userId);
       if (userCommentsError) console.error("Error deleting user comments:", userCommentsError);
 
       // Delete course ratings by this user
-      console.log("Deleting course ratings by user...");
       const { error: userRatingsError } = await supabase.from("course_ratings").delete().eq("user_id", userId);
       if (userRatingsError) console.error("Error deleting user ratings:", userRatingsError);
 
       // Delete course saves by this user
-      console.log("Deleting course saves by user...");
       const { error: userSavesError } = await supabase.from("course_saves").delete().eq("user_id", userId);
       if (userSavesError) console.error("Error deleting user saves:", userSavesError);
 
       // Delete course likes by this user
-      console.log("Deleting course likes by user...");
       const { error: userLikesError } = await supabase.from("course_likes").delete().eq("user_id", userId);
       if (userLikesError) console.error("Error deleting user likes:", userLikesError);
 
       // Delete course views by this user
-      console.log("Deleting course views by user...");
       const { error: userViewsError } = await supabase.from("course_views").delete().eq("user_id", userId);
       if (userViewsError) console.error("Error deleting user views:", userViewsError);
 
       // Delete user follows (both following and followers)
-      console.log("Deleting user follows...");
       const { error: userFollowsError1 } = await supabase.from("user_follows").delete().eq("follower_id", userId);
       if (userFollowsError1) console.error("Error deleting user follows (follower):", userFollowsError1);
       const { error: userFollowsError2 } = await supabase.from("user_follows").delete().eq("following_id", userId);
       if (userFollowsError2) console.error("Error deleting user follows (following):", userFollowsError2);
 
       // Delete learning trails created by this user
-      console.log("Deleting learning trails by user...");
       const { error: trailsError } = await supabase.from("learning_trails").delete().eq("creator_id", userId);
       if (trailsError) console.error("Error deleting user trails:", trailsError);
 
       // Delete trail courses for trails created by this user
-      console.log("Deleting trail courses for user trails...");
       const { data: userTrails, error: trailsFetchError } = await supabase
         .from("learning_trails")
         .select("id")
@@ -414,26 +395,21 @@ export default function Admin() {
       }
 
       // Delete course reports made by this user
-      console.log("Deleting course reports by user...");
       const { error: reportsError } = await supabase.from("course_reports").delete().eq("reporter_id", userId);
       if (reportsError) console.error("Error deleting user reports:", reportsError);
 
       // Delete moderation logs for this user
-      console.log("Deleting moderation logs for user...");
       const { error: moderationLogsError } = await supabase.from("moderation_logs").delete().eq("moderator_id", userId);
       if (moderationLogsError) console.error("Error deleting moderation logs:", moderationLogsError);
 
       // Delete user roles
-      console.log("Deleting user roles...");
       const { error: rolesError } = await supabase.from("user_roles").delete().eq("user_id", userId);
       if (rolesError) {
         console.error("Error deleting user roles:", rolesError);
         throw rolesError;
       }
-      console.log("User roles deleted successfully");
 
       // Update user profile to mark as banned instead of deleting
-      console.log("Marking user profile as banned...");
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -447,10 +423,8 @@ export default function Admin() {
         throw profileError;
       }
 
-      console.log("User profile marked as banned successfully");
 
       // Now call the Edge Function to delete from Supabase Auth
-      console.log("Calling Edge Function to delete from Auth...");
       const { data: authData, error: authError } = await supabase.functions.invoke('delete-user', {
         body: { userId },
         headers: {
@@ -467,10 +441,8 @@ export default function Admin() {
           variant: "destructive",
         });
       } else {
-        console.log("Auth deletion response:", authData);
       }
 
-      console.log("User banned successfully");
       toast({
         title: "Sucesso",
         description: "Usuário banido com sucesso.",
@@ -603,6 +575,42 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteForumTopic = async (topicId: string) => {
+    const confirmed = window.confirm("Tem certeza que deseja excluir este tópico do fórum? Todas as respostas serão excluídas também.");
+    if (!confirmed) return;
+
+    try {
+      // First, delete related replies
+      const { error: repliesError } = await supabase
+        .from("forum_replies")
+        .delete()
+        .eq("topic_id", topicId);
+      if (repliesError) console.error("Error deleting forum replies:", repliesError);
+
+      // Delete the topic
+      const { error } = await supabase
+        .from("forum_topics")
+        .delete()
+        .eq("id", topicId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Tópico do fórum excluído com sucesso.",
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting forum topic:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir tópico do fórum.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -662,6 +670,7 @@ export default function Admin() {
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="courses">Cursos</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
+            <TabsTrigger value="forum">Fórum</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="mt-6">
@@ -855,6 +864,41 @@ export default function Admin() {
                 </DialogContent>
               </Dialog>
             )}
+          </TabsContent>
+
+          <TabsContent value="forum" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciar Fórum</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {forumTopics.map((topic) => (
+                    <div
+                      key={topic.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{topic.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Por: {topic.profiles?.full_name || topic.profiles?.username} | Criado em: {new Date(topic.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Respostas: {topic.reply_count || 0} | Views: {topic.view_count || 0}
+                        </p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteForumTopic(topic.id)}
+                      >
+                        Excluir
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>

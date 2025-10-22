@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Navbar } from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Search } from "lucide-react";
 
 interface Course {
   id: string;
@@ -25,8 +25,10 @@ export default function TrailNew() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -43,6 +45,18 @@ export default function TrailNew() {
       fetchTrail();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredCourses(availableCourses.slice(0, 10));
+    } else {
+      const filtered = availableCourses.filter(course =>
+        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredCourses(filtered);
+    }
+  }, [searchQuery, availableCourses]);
 
   const fetchCourses = async () => {
     const { data } = await supabase
@@ -195,13 +209,26 @@ export default function TrailNew() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Selecione os cursos e organize a sequência de aprendizado
                 </p>
+
+                {/* Campo de pesquisa */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Buscar cursos..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
                 {availableCourses.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">
                     Nenhum curso disponível
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-96 overflow-y-auto border rounded-md p-4">
-                    {availableCourses.map((course) => (
+                    {filteredCourses.map((course) => (
                       <div key={course.id} className="flex items-start gap-2 p-2 hover:bg-accent rounded">
                         <Checkbox
                           id={course.id}
@@ -216,6 +243,11 @@ export default function TrailNew() {
                         </label>
                       </div>
                     ))}
+                    {filteredCourses.length === 0 && searchQuery.trim() !== "" && (
+                      <p className="text-muted-foreground text-center py-4">
+                        Nenhum curso encontrado para "{searchQuery}"
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

@@ -120,7 +120,6 @@ export default function CourseDetail() {
 
       // Verificar se já registramos visualização nesta sessão
       if (sessionStorage.getItem(`course_view_${id}`)) {
-        console.log("Visualização já registrada nesta sessão");
         return;
       }
 
@@ -138,7 +137,7 @@ export default function CourseDetail() {
       if (error) {
         console.error("Erro ao registrar visualização:", error);
       } else {
-        console.log("Visualização registrada com sucesso");
+        console.log("");
       }
     } catch (error) {
       console.error("Erro inesperado ao registrar visualização:", error);

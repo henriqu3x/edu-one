@@ -73,7 +73,7 @@ export default function Index() {
         `
         )
         .order("created_at", { ascending: false })
-        .limit(12);
+        .limit(8);
 
       if (error) throw error;
       setCourses(data || []);
