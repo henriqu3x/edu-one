@@ -10,6 +10,7 @@ import { useRef } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import CourseNew from "./pages/CourseNew";
+import CourseEdit from "./pages/CourseEdit";
 import CourseDetail from "./pages/CourseDetail";
 import Profile from "./pages/Profile";
 import Trails from "./pages/Trails";
@@ -61,6 +62,7 @@ function AppRoutes() {
         <Route path="/search" element={<PageTransition><Search /></PageTransition>} />
         <Route path="/course/new" element={<PageTransition><CourseNew /></PageTransition>} />
         <Route path="/course/:id" element={<PageTransition><CourseDetail /></PageTransition>} />
+        <Route path="/course/:id/edit" element={<PageTransition><CourseEdit /></PageTransition>} />
         <Route path="/profile/:id" element={<PageTransition><Profile /></PageTransition>} />
         <Route path="/trails" element={<PageTransition><Trails /></PageTransition>} />
         <Route path="/trail/:id" element={<PageTransition><TrailDetail /></PageTransition>} />

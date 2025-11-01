@@ -7,7 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MessageSquare, Send, User } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, User, Flag } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface Topic {
   id: string;
@@ -44,12 +47,44 @@ export default function ForumTopic() {
   const [user, setUser] = useState<any>(null);
   const [newReply, setNewReply] = useState("");
   const [postingReply, setPostingReply] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [currentReportId, setCurrentReportId] = useState<string | null>(null);
+  const [reportedReplies, setReportedReplies] = useState<Set<string>>(new Set());
+  const [isTopicReported, setIsTopicReported] = useState(false);
+  const [showTopicReportDialog, setShowTopicReportDialog] = useState(false);
+  const [showReplyReportDialog, setShowReplyReportDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-    });
+      
+      if (user && id) {
+        // Verificar se o usuário já denunciou alguma resposta
+        const { data: replyReports } = await supabase
+          .from('forum_reports')
+          .select('reply_id')
+          .eq('reporter_id', user.id);
+          
+        if (replyReports) {
+          setReportedReplies(new Set(replyReports.map(r => r.reply_id)));
+        }
+        
+        // Verificar se o usuário já denunciou este tópico
+        const { data: topicReport } = await supabase
+          .from('forum_topic_reports')
+          .select('id')
+          .eq('reporter_id', user.id)
+          .eq('topic_id', id)
+          .single();
+          
+        setIsTopicReported(!!topicReport);
+      }
+    };
+
+    fetchUser();
 
     if (id) {
       fetchTopic();
@@ -107,25 +142,19 @@ export default function ForumTopic() {
   };
 
   const postReply = async () => {
-    if (!user) {
-      toast({ title: "Faça login para responder", variant: "destructive" });
-      return;
-    }
-
-    if (!newReply.trim()) {
-      toast({ title: "Digite uma resposta", variant: "destructive" });
-      return;
-    }
 
     setPostingReply(true);
+
     try {
-      const { data, error } = await supabase
+      const { data: newReplyData, error } = await supabase
         .from("forum_replies")
-        .insert({
-          topic_id: id,
-          content: newReply.trim(),
-          author_id: user.id
-        })
+        .insert([
+          {
+            topic_id: id,
+            content: newReply,
+            author_id: user.id,
+          },
+        ])
         .select(`
           *,
           profiles!forum_replies_author_id_fkey(username, full_name, avatar_url)
@@ -134,26 +163,131 @@ export default function ForumTopic() {
 
       if (error) throw error;
 
-      setReplies(prev => [...prev, data]);
-      setNewReply("");
+      // Atualizar a contagem de respostas no tópico
+      const { error: countError } = await supabase
+        .from('forum_topics')
+        .update({
+          reply_count: replies.length + 1
+        })
+        .eq('id', id);
 
-      toast({ title: "Resposta enviada com sucesso!" });
+      if (countError) {
+        console.error('Error updating reply count:', countError);
+      }
+
+      // Adicionar a nova resposta à lista existente
+      if (newReplyData) {
+        setReplies(prev => [...prev, newReplyData as Reply]);
+      }
+
+      setNewReply("");
+      toast({
+        title: "Resposta publicada",
+        description: "Sua resposta foi publicada com sucesso!",
+      });
     } catch (error) {
       console.error("Error posting reply:", error);
-      toast({ title: "Erro ao enviar resposta", variant: "destructive" });
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao publicar sua resposta.",
+        variant: "destructive",
+      });
     } finally {
       setPostingReply(false);
     }
   };
 
+  const handleReport = async (replyId: string) => {
+    if (!reportReason.trim() || !user) return;
+
+    setReporting(true);
+
+    try {
+      const { error } = await supabase
+        .from("forum_reports")
+        .insert([
+          {
+            reply_id: replyId,
+            reporter_id: user.id,
+            reason: reportReason,
+            status: "pending",
+          },
+        ]);
+
+      if (error) throw error;
+
+      // Adiciona o ID da resposta ao conjunto de respostas denunciadas
+      setReportedReplies(prev => new Set([...prev, replyId]));
+
+      toast({
+        title: "Denúncia enviada",
+        description: "Sua denúncia foi registrada e será analisada pela equipe de moderação.",
+      });
+
+      // Fechar o dialog após o envio bem-sucedido
+      setReportReason("");
+      setCurrentReportId(null);
+      setShowReplyReportDialog(false);
+    } catch (error) {
+      console.error("Error reporting reply:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao enviar sua denúncia.",
+        variant: "destructive",
+      });
+    } finally {
+      setReporting(false);
+    }
+  };
+  
+  const handleReportTopic = async () => {
+    if (!reportReason.trim() || !user || !id) return;
+    
+    setReporting(true);
+    
+    try {
+      const { error } = await supabase
+        .from("forum_topic_reports")
+        .insert([
+          {
+            topic_id: id,
+            reporter_id: user.id,
+            reason: reportReason,
+            status: "pending",
+          },
+        ]);
+        
+      if (error) throw error;
+      
+      setIsTopicReported(true);
+      setShowTopicReportDialog(false);
+      
+      toast({
+        title: "Tópico denunciado",
+        description: "Sua denúncia foi registrada e será analisada pela equipe de moderação.",
+      });
+      
+      setReportReason("");
+    } catch (error) {
+      console.error("Error reporting topic:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao denunciar o tópico.",
+        variant: "destructive",
+      });
+    } finally {
+      setReporting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -207,21 +341,65 @@ export default function ForumTopic() {
                 <Avatar className="w-12 h-12">
                   <AvatarImage src={topic.profiles?.avatar_url} />
                   <AvatarFallback>
-                    {topic.profiles?.full_name?.[0] || topic.profiles?.username?.[0] || 'U'}
+                    {topic.profiles?.full_name?.[0] || topic.profiles?.username?.[0] || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <CardTitle className="text-2xl mb-2">{topic.title}</CardTitle>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <User className="w-4 h-4" />
-                      <span>{topic.profiles?.full_name || topic.profiles?.username || 'Usuário'}</span>
+                      <span>{topic.profiles?.full_name || topic.profiles?.username || "Usuário"}</span>
                     </div>
                     <span>{formatDate(topic.created_at)}</span>
                     <div className="flex items-center gap-1">
                       <MessageSquare className="w-4 h-4" />
                       <span>{replies.length} respostas</span>
                     </div>
+                    {user && (
+                      <Dialog open={showTopicReportDialog} onOpenChange={setShowTopicReportDialog}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-red-500"
+                            disabled={isTopicReported}
+                            onClick={() => setShowTopicReportDialog(true)}
+                          >
+                            <Flag className="h-3.5 w-3.5 mr-1" />
+                            {isTopicReported ? 'Tópico denunciado' : 'Denunciar tópico'}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Denunciar Tópico</DialogTitle>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="topic-reason" className="text-right">
+                                Motivo
+                              </Label>
+                              <Input
+                                id="topic-reason"
+                                value={reportReason}
+                                onChange={(e) => setReportReason(e.target.value)}
+                                className="col-span-3"
+                                placeholder="Descreva o motivo da denúncia"
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button
+                              type="submit"
+                              onClick={handleReportTopic}
+                              disabled={!reportReason.trim() || reporting}
+                            >
+                              {reporting ? "Enviando..." : "Enviar Denúncia"}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
                   </div>
                 </div>
               </div>
@@ -242,17 +420,74 @@ export default function ForumTopic() {
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={reply.profiles?.avatar_url} />
                     <AvatarFallback>
-                      {reply.profiles?.full_name?.[0] || reply.profiles?.username?.[0] || 'U'}
+                      {reply.profiles?.full_name?.[0] || reply.profiles?.username?.[0] || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-medium">
-                        {reply.profiles?.full_name || reply.profiles?.username || 'Usuário'}
+                        {reply.profiles?.full_name || reply.profiles?.username || "Usuário"}
                       </span>
-                      <span className="text-sm text-muted-foreground">
-                        {formatDate(reply.created_at)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(reply.created_at).toLocaleString("pt-BR")}
+                        </p>
+                        <Dialog open={showReplyReportDialog && currentReportId === reply.id} onOpenChange={(open) => {
+                          if (!open) {
+                            setShowReplyReportDialog(false);
+                            setCurrentReportId(null);
+                            setReportReason("");
+                          }
+                        }}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-6 w-6 ${reportedReplies.has(reply.id) ? 'text-gray-500' : 'text-muted-foreground hover:text-red-500'}`}
+                              onClick={() => {
+                                setCurrentReportId(reply.id);
+                                setReportReason("");
+                                setShowReplyReportDialog(true);
+                              }}
+                              disabled={reportedReplies.has(reply.id)}
+                              title={reportedReplies.has(reply.id) ? 'Você já denunciou esta resposta' : 'Denunciar resposta'}
+                            >
+                              <Flag className="h-3.5 w-3.5" />
+                              <span className="sr-only">
+                                {reportedReplies.has(reply.id) ? 'Você já denunciou esta resposta' : 'Denunciar resposta'}
+                              </span>
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Denunciar Resposta</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="reason" className="text-right">
+                                  Motivo
+                                </Label>
+                                <Input
+                                  id="reason"
+                                  value={reportReason}
+                                  onChange={(e) => setReportReason(e.target.value)}
+                                  className="col-span-3"
+                                  placeholder="Descreva o motivo da denúncia"
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                type="submit"
+                                onClick={() => handleReport(reply.id)}
+                                disabled={!reportReason.trim() || reporting}
+                              >
+                                {reporting ? "Enviando..." : "Enviar Denúncia"}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                     <p className="text-muted-foreground whitespace-pre-wrap">{reply.content}</p>
                   </div>

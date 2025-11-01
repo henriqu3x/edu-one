@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { CourseCard } from "@/components/CourseCard";
 import { Input } from "@/components/ui/input";
 import { Search as SearchIcon, Users, MessageSquare, BookOpen } from "lucide-react";
+import { CategoryIcon } from "@/lib/icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -187,7 +188,10 @@ export default function Search() {
                       <SelectItem value="all">Todas as Categorias</SelectItem>
                       {categories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
+                          <div className="flex items-center gap-2">
+                            <CategoryIcon iconName={cat.icon} className="h-4 w-4" />
+                            {cat.name}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -242,7 +246,7 @@ export default function Search() {
                         avatar_url: course.profiles?.avatar_url,
                         is_verified_author: course.profiles?.is_verified_author || false,
                       }}
-                      category={course.categories ? { name: course.categories.name, icon: course.categories.icon || '📚' } : undefined}
+                      category={course.categories ? { name: course.categories.name, icon: course.categories.icon || 'Book' } : undefined}
                       difficulty_level={course.difficulty_level}
                       view_count={course.view_count}
                       like_count={course.like_count}

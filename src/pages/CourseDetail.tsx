@@ -9,34 +9,37 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Bookmark, Flag, Eye, MessageSquare, Share2, Star, AlertCircle } from "lucide-react";
+import { Heart, Bookmark, Flag, Eye, MessageSquare, Share2, Star, AlertCircle, Edit } from "lucide-react";
 import { RatingComponent } from "@/components/RatingComponent";
+import { Helmet } from "react-helmet-async";
+
+import VideoPlayer from "@/components/VideoPlayer";
 
 // Convert YouTube URL to embed format
 const convertToYouTubeEmbed = (url: string): string => {
   if (!url) return url;
-  
+
   // Check if already an embed URL
   if (url.includes("youtube.com/embed/")) return url;
-  
+
   // Handle youtube.com/watch?v=VIDEO_ID
   const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
   if (watchMatch) {
     return `https://www.youtube.com/embed/${watchMatch[1]}`;
   }
-  
+
   // Handle youtu.be/VIDEO_ID
   const shortMatch = url.match(/youtu\.be\/([^?]+)/);
   if (shortMatch) {
     return `https://www.youtube.com/embed/${shortMatch[1]}`;
   }
-  
+
   // Handle playlist
   const playlistMatch = url.match(/[?&]list=([^&]+)/);
   if (playlistMatch) {
     return `https://www.youtube.com/embed/videoseries?list=${playlistMatch[1]}`;
   }
-  
+
   return url;
 };
 
@@ -308,246 +311,314 @@ export default function CourseDetail() {
   if (!course) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h1 className="text-4xl font-bold mb-2">{course.title}</h1>
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary">{course.difficulty_level}</Badge>
-                  {course.categories && (
-                    <Badge variant="outline">{course.categories.name}</Badge>
-                  )}
+    <>
+      <Helmet>
+        <title>{`${course.title} | Educa+`}</title>
+        <meta
+          name="description"
+          content={
+            course.description?.slice(0, 160) ||
+            "Curso gratuito estruturado com vídeos do YouTube."
+          }
+        />
+        <meta property="og:title" content={course.title} />
+        <meta
+          property="og:description"
+          content={
+            course.description ||
+            "Curso gratuito no YouTube organizado em módulos."
+          }
+        />
+        <meta
+          property="og:image"
+          content={course.thumbnail || "/favicon.ico"}
+        />
+        <meta property="og:type" content="website" />
+        <meta
+          property="og:url"
+          content={`https://educamais1.netlify.app/course/${id}`}
+        />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Course",
+            name: course.title,
+            description: course.description,
+            provider: {
+              "@type": "Organization",
+              name: "Educa+",
+              sameAs: "https://educamais1.netlify.app",
+            },
+          })}
+        </script>
+      </Helmet>
+
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-8">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h1 className="text-4xl font-bold mb-2">{course.title}</h1>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="secondary">{course.difficulty_level}</Badge>
+                    {course.categories && (
+                      <Badge variant="outline">{course.categories.name}</Badge>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                {/* Status Badge for Author */}
-                {course.status !== "approved" && (
-                  <Card className="mb-4 border-yellow-500">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-yellow-500" />
-                        <div>
-                          <p className="font-semibold">
-                            {course.status === "pending" && "Aguardando Aprovação"}
-                            {course.status === "rejected" && "Conteúdo Rejeitado"}
-                          </p>
-                          {course.rejection_reason && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Motivo: {course.rejection_reason}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                  {/* Status Badge for Author */}
+                  {course.status !== "approved" && (
+                    <Card className="mb-4 border-yellow-500">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5 text-yellow-500" />
+                          <div>
+                            <p className="font-semibold">
+                              {course.status === "pending" && "Aguardando Aprovação"}
+                              {course.status === "rejected" && "Conteúdo Rejeitado"}
                             </p>
+                            {course.rejection_reason && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Motivo: {course.rejection_reason}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Video/Content */}
+                  <Card className="mb-6">
+                    <CardContent className="p-0">
+                      {course.video_type === 'external' && course.content_url && (
+                        <div className="aspect-video bg-muted">
+                          <iframe
+                            src={course.content_url}
+                            className="w-full h-full"
+                            allowFullScreen
+                            title={course.title}
+                          />
+                        </div>
+                      )}
+
+                      {(course.video_type === 'cloudinary_single' || course.video_type === 'cloudinary_playlist') && course.video_urls && course.video_urls.length > 0 && (
+                        <VideoPlayer
+                          videos={course.video_urls.map((url: string, index: number) => ({
+                            public_id: `video_${index}`,
+                            secure_url: url,
+                            thumbnail_url: course.thumbnail_url || null,
+                            duration: null
+                          }))}
+                          title={course.title}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Description */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle>Sobre o Curso</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">{course.description}</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Rating Display */}
+                  {course.average_rating > 0 && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-5 w-5 ${
+                              star <= Math.round(course.average_rating)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="font-medium">{course.average_rating.toFixed(1)}</span>
+                      <span className="text-sm text-muted-foreground">
+                        ({course.rating_count} {course.rating_count === 1 ? "avaliação" : "avaliações"})
+                      </span>
+                      {course.average_rating >= 4.5 && course.rating_count >= 5 && (
+                        <Badge variant="default">Recomendado pela Comunidade</Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {course.tags && course.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {course.tags.map((tag: string) => (
+                        <Badge key={tag} variant="secondary">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Rating Component */}
+                  <RatingComponent courseId={course.id} />
+
+                  {/* Comments Section */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" />
+                        Comentários ({comments.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Add Comment */}
+                      {user && (
+                        <div className="space-y-2">
+                          <Textarea
+                            placeholder="Adicione um comentário..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                          />
+                          <Button onClick={handleCommentSubmit}>Enviar Comentário</Button>
+                        </div>
+                      )}
+
+                      <Separator />
+
+                      {/* Comments List */}
+                      <div className="space-y-4">
+                        {comments.length === 0 ? (
+                          <p className="text-center text-muted-foreground py-8">
+                            Nenhum comentário ainda. Seja o primeiro!
+                          </p>
+                        ) : (
+                          comments.map((comment) => (
+                            <div key={comment.id} className="flex gap-3">
+                              <Avatar>
+                                <AvatarImage src={comment.profiles?.avatar_url} />
+                                <AvatarFallback>
+                                  {comment.profiles?.full_name?.[0] || comment.profiles?.username?.[0] || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-semibold">
+                                    {comment.profiles?.full_name || comment.profiles?.username || "Usuário"}
+                                  </p>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(comment.created_at).toLocaleDateString("pt-BR")}
+                                  </span>
+                                </div>
+                                <p className="text-sm">{comment.content}</p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Sidebar */}
+                <div className="space-y-4">
+                  {/* Actions */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Ações</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {/* Edit Button - Only for course author */}
+                      {user && course.author_id === user.id && course.status === "approved" && (
+                        <Button
+                          onClick={() => navigate(`/course/${course.id}/edit`)}
+                          variant="outline"
+                          className="w-full"
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar Curso
+                        </Button>
+                      )}
+                      <Button
+                        onClick={handleLike}
+                        variant={isLiked ? "default" : "outline"}
+                        className="w-full"
+                      >
+                        <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-current" : ""}`} />
+                        {isLiked ? "Curtido" : "Curtir"} ({likesCount})
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        variant={isSaved ? "default" : "outline"}
+                        className="w-full"
+                      >
+                        <Bookmark className={`h-4 w-4 mr-2 ${isSaved ? "fill-current" : ""}`} />
+                        {isSaved ? "Salvo" : "Salvar"}
+                      </Button>
+                      <Button variant="outline" className="w-full" onClick={handleReport}>
+                        <Flag className="h-4 w-4 mr-2" />
+                        Denunciar
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Author Info */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Autor</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={course.profiles?.avatar_url} />
+                          <AvatarFallback>
+                            {course.profiles?.full_name?.[0] || course.profiles?.username?.[0] || "A"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold">{course.profiles?.full_name || course.profiles?.username}</p>
+                          {course.profiles?.is_verified_author && (
+                            <Badge variant="secondary" className="text-xs">Verificado</Badge>
                           )}
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                )}
 
-                {/* Video/Content */}
-                <Card className="mb-6">
-                  <CardContent className="p-0">
-                    <div className="aspect-video bg-muted">
-                      <iframe
-                        src={course.content_url}
-                        className="w-full h-full"
-                        allowFullScreen
-                        title={course.title}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Description */}
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle>Sobre o Curso</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{course.description}</p>
-                  </CardContent>
-                </Card>
-
-                {/* Rating Display */}
-                {course.average_rating > 0 && (
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`h-5 w-5 ${
-                            star <= Math.round(course.average_rating)
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="font-medium">{course.average_rating.toFixed(1)}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({course.rating_count} {course.rating_count === 1 ? "avaliação" : "avaliações"})
-                    </span>
-                    {course.average_rating >= 4.5 && course.rating_count >= 5 && (
-                      <Badge variant="default">Recomendado pela Comunidade</Badge>
-                    )}
-                  </div>
-                )}
-
-                {/* Tags */}
-                {course.tags && course.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {course.tags.map((tag: string) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Rating Component */}
-                <RatingComponent courseId={course.id} />
-
-                {/* Comments Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-5 w-5" />
-                      Comentários ({comments.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Add Comment */}
-                    {user && (
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder="Adicione um comentário..."
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                        />
-                        <Button onClick={handleCommentSubmit}>Enviar Comentário</Button>
+                  {/* Stats */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Estatísticas</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Visualizações</span>
+                        <span className="font-semibold">{course.view_count}</span>
                       </div>
-                    )}
-
-                    <Separator />
-
-                    {/* Comments List */}
-                    <div className="space-y-4">
-                      {comments.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">
-                          Nenhum comentário ainda. Seja o primeiro!
-                        </p>
-                      ) : (
-                        comments.map((comment) => (
-                          <div key={comment.id} className="flex gap-3">
-                            <Avatar>
-                              <AvatarImage src={comment.profiles?.avatar_url} />
-                              <AvatarFallback>
-                                {comment.profiles?.full_name?.[0] || comment.profiles?.username?.[0] || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-semibold">
-                                  {comment.profiles?.full_name || comment.profiles?.username || "Usuário"}
-                                </p>
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(comment.created_at).toLocaleDateString("pt-BR")}
-                                </span>
-                              </div>
-                              <p className="text-sm">{comment.content}</p>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Sidebar */}
-              <div className="space-y-4">
-                {/* Actions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ações</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <Button
-                      onClick={handleLike}
-                      variant={isLiked ? "default" : "outline"}
-                      className="w-full"
-                    >
-                      <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-current" : ""}`} />
-                      {isLiked ? "Curtido" : "Curtir"} ({likesCount})
-                    </Button>
-                    <Button
-                      onClick={handleSave}
-                      variant={isSaved ? "default" : "outline"}
-                      className="w-full"
-                    >
-                      <Bookmark className={`h-4 w-4 mr-2 ${isSaved ? "fill-current" : ""}`} />
-                      {isSaved ? "Salvo" : "Salvar"}
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={handleReport}>
-                      <Flag className="h-4 w-4 mr-2" />
-                      Denunciar
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Author Info */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Autor</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={course.profiles?.avatar_url} />
-                        <AvatarFallback>
-                          {course.profiles?.full_name?.[0] || course.profiles?.username?.[0] || "A"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">{course.profiles?.full_name || course.profiles?.username}</p>
-                        {course.profiles?.is_verified_author && (
-                          <Badge variant="secondary" className="text-xs">Verificado</Badge>
-                        )}
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Curtidas</span>
+                        <span className="font-semibold">{likesCount}</span>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Stats */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Estatísticas</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Visualizações</span>
-                      <span className="font-semibold">{course.view_count}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Curtidas</span>
-                      <span className="font-semibold">{likesCount}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Salvos</span>
-                      <span className="font-semibold">{course.save_count}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Salvos</span>
+                        <span className="font-semibold">{course.save_count}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }

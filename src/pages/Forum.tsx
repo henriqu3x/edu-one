@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { MessageSquare, Plus, User, Clock, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -35,6 +36,7 @@ export default function Forum() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creatingTopic, setCreatingTopic] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -232,22 +234,22 @@ export default function Forum() {
                       <p className="text-muted-foreground mt-1 line-clamp-2">
                         {topic.content}
                       </p>
-                      <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                      <div className={`flex items-center gap-4 mt-3 text-sm text-muted-foreground ${isMobile ? 'flex-wrap' : ''}`}>
                         <div className="flex items-center gap-1">
                           <User className="w-4 h-4" />
                           <span>{topic.profiles?.full_name || topic.profiles?.username || 'Usuário'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{formatDate(topic.created_at)}</span>
+                          <span>{isMobile ? formatDate(topic.created_at).split(' ')[0] : formatDate(topic.created_at)}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <MessageSquare className="w-4 h-4" />
-                          <span>{topic.reply_count} respostas</span>
+                          <span>{topic.reply_count} {isMobile ? 'resp.' : 'respostas'}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Eye className="w-4 h-4" />
-                          <span>{topic.view_count} visualizações</span>
+                          <span>{topic.view_count} {isMobile ? 'vis.' : 'visualizações'}</span>
                         </div>
                       </div>
                     </div>

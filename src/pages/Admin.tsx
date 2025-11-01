@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { iconComponents } from "@/lib/icons";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,142 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Users, BookOpen, Shield, TrendingUp, MessageSquare } from "lucide-react";
+import { 
+  Users, 
+  BookOpen, 
+  Shield, 
+  TrendingUp, 
+  MessageSquare,
+  Book,
+  Code,
+  Laptop,
+  Paintbrush,
+  Music,
+  Camera,
+  Heart,
+  Lightbulb,
+  Brain,
+  Languages,
+  GraduationCap,
+  Briefcase,
+  Globe,
+  Home,
+  Smartphone,
+  Gamepad2,
+  Utensils,
+  Dumbbell,
+  Palette,
+  Code2,
+  Database,
+  Server,
+  Network,
+  Lock,
+  Unlock,
+  ShieldCheck,
+  BarChart3,
+  PieChart,
+  LineChart,
+  TrendingUp as TrendingUpIcon,
+  DollarSign,
+  ShoppingCart,
+  CreditCard,
+  Wallet,
+  Tag,
+  Ticket,
+  Gift,
+  Award,
+  Star,
+  ThumbsUp,
+  MessageCircle,
+  MessageSquare as MessageSquareIcon,
+  Mail,
+  Bell,
+  Calendar,
+  Clock,
+  Settings,
+  User,
+  Users as UsersIcon,
+  UserPlus,
+  UserCheck,
+  UserX,
+  HelpCircle,
+  Info,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Plus,
+  Minus,
+  X,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Search,
+  Filter,
+  SlidersHorizontal,
+  MoreHorizontal,
+  MoreVertical,
+  Trash2,
+  Edit,
+  Copy,
+  Share2,
+  Download,
+  Upload,
+  ExternalLink,
+  Link as LinkIcon,
+  Lock as LockIcon,
+  Unlock as UnlockIcon,
+  Eye,
+  EyeOff,
+  Moon,
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
+  CloudDrizzle,
+  CloudFog,
+  CloudHail,
+  CloudSun,
+  CloudMoon,
+  Droplet,
+  Umbrella,
+  Wind,
+  Thermometer,
+  Sun as SunIcon,
+  Moon as MoonIcon,
+  Sunrise,
+  Sunset,
+  Watch,
+  Clock as ClockIcon,
+  Calendar as CalendarIcon,
+  CalendarDays,
+  CalendarCheck,
+  CalendarX,
+  CalendarPlus,
+  CalendarMinus,
+  CalendarClock,
+  CalendarRange,
+  CalendarSearch,
+  CalendarHeart,
+  Calendar as CalendarIcon2,
+  CalendarDays as CalendarDaysIcon,
+  CalendarCheck as CalendarCheckIcon,
+  CalendarX as CalendarXIcon,
+  CalendarPlus as CalendarPlusIcon,
+  CalendarMinus as CalendarMinusIcon,
+  CalendarClock as CalendarClockIcon,
+  CalendarRange as CalendarRangeIcon,
+  CalendarSearch as CalendarSearchIcon,
+  CalendarHeart as CalendarHeartIcon,
+  type LucideIcon
+} from "lucide-react";
 
 export default function Admin() {
   const [users, setUsers] = useState<any[]>([]);
@@ -37,11 +173,31 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [categoryForm, setCategoryForm] = useState({
+  type IconName = keyof typeof iconComponents;
+  
+  interface CategoryFormData {
+    name: string;
+    slug: string;
+    icon: IconName;
+  }
+
+  const [categoryForm, setCategoryForm] = useState<CategoryFormData>({
     name: '',
     slug: '',
-    icon: '',
+    icon: 'Book', // Default icon
   });
+
+  // Icon mapping for categories
+  const iconMap: { [key: string]: LucideIcon } = {
+    Book, Code, Laptop, Paintbrush, Music, Camera, Heart, Lightbulb,
+    Brain, Languages, GraduationCap, Briefcase, Globe, Home, Smartphone,
+    Gamepad2, Utensils, Dumbbell, Palette, Code2, Database, Server,
+    Network, Lock, Shield, BarChart3, PieChart, LineChart, DollarSign,
+    ShoppingCart, CreditCard, Wallet, Tag, Gift, Award, Star, MessageCircle
+  };
+
+  // List of available icon names for categories
+  const categoryIcons: IconName[] = Object.keys(iconComponents) as IconName[];
   const { toast } = useToast();
 
   useEffect(() => {
@@ -460,7 +616,7 @@ export default function Admin() {
   };
 
   const handleAddCategory = async () => {
-    if (!categoryForm.name || !categoryForm.slug || !categoryForm.icon) {
+    if (!categoryForm.name || !categoryForm.slug) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos.",
@@ -486,7 +642,7 @@ export default function Admin() {
       });
 
       setShowAddCategory(false);
-      setCategoryForm({ name: '', slug: '', icon: '' });
+      setCategoryForm({ name: '', slug: '', icon: 'Book' });
       fetchData();
     } catch (error) {
       console.error("Error adding category:", error);
@@ -503,12 +659,13 @@ export default function Admin() {
     setCategoryForm({
       name: category.name,
       slug: category.slug,
-      icon: category.icon,
+      // Ensure the icon is a valid icon name, fallback to 'Book' if not found
+      icon: iconComponents[category.icon as keyof typeof iconComponents] ? category.icon : 'Book',
     });
   };
 
   const handleUpdateCategory = async () => {
-    if (!editingCategory || !categoryForm.name || !categoryForm.slug || !categoryForm.icon) {
+    if (!editingCategory || !categoryForm.name || !categoryForm.slug) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos.",
@@ -535,7 +692,7 @@ export default function Admin() {
       });
 
       setEditingCategory(null);
-      setCategoryForm({ name: '', slug: '', icon: '' });
+      setCategoryForm({ name: '', slug: '', icon: 'Book' });
       fetchData();
     } catch (error) {
       console.error("Error updating category:", error);
@@ -774,7 +931,13 @@ export default function Admin() {
                       className="flex items-center justify-between p-4 border rounded-lg"
                     >
                       <div className="flex items-center gap-4">
-                        <span className="text-2xl">{cat.icon}</span>
+                        <div className="flex items-center justify-center w-8 h-8">
+                          {iconComponents[cat.icon as keyof typeof iconComponents] ? (
+                            React.createElement(iconComponents[cat.icon as keyof typeof iconComponents], { className: "h-6 w-6" })
+                          ) : (
+                            <Book className="h-6 w-6" />
+                          )}
+                        </div>
                         <div>
                           <p className="font-medium">{cat.name}</p>
                           <p className="text-sm text-muted-foreground">Slug: {cat.slug}</p>
@@ -808,7 +971,7 @@ export default function Admin() {
                 if (!open) {
                   setShowAddCategory(false);
                   setEditingCategory(null);
-                  setCategoryForm({ name: '', slug: '', icon: '' });
+                  setCategoryForm({ name: '', slug: '', icon: 'Book' });
                 }
               }}>
                 <DialogContent>
@@ -837,13 +1000,33 @@ export default function Admin() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="icon">Ícone (Emoji)</Label>
-                      <Input
-                        id="icon"
-                        value={categoryForm.icon}
-                        onChange={(e) => setCategoryForm(prev => ({ ...prev, icon: e.target.value }))}
-                        placeholder="📚"
-                      />
+                      <Label>Ícone</Label>
+                      <div className="grid grid-cols-6 gap-2 mt-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+                        {categoryIcons.map((iconName) => {
+                          const Icon = iconComponents[iconName];
+                          return (
+                            <button
+                              key={iconName}
+                              type="button"
+                              className={`p-2 rounded-md flex items-center justify-center ${
+                                categoryForm.icon === iconName 
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'hover:bg-accent hover:text-accent-foreground'
+                              }`}
+                              onClick={() => setCategoryForm(prev => ({
+                                ...prev,
+                                icon: iconName as IconName
+                              }))}
+                              title={iconName}
+                            >
+                              {React.createElement(Icon, { className: "h-5 w-5" })}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ícone selecionado: {categoryForm.icon}
+                      </p>
                     </div>
                   </div>
                   <DialogFooter>
@@ -852,7 +1035,7 @@ export default function Admin() {
                       onClick={() => {
                         setShowAddCategory(false);
                         setEditingCategory(null);
-                        setCategoryForm({ name: '', slug: '', icon: '' });
+                        setCategoryForm({ name: '', slug: '', icon: 'Book' });
                       }}
                     >
                       Cancelar

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navbar } from "@/components/Navbar";
 import { CourseCard } from "@/components/CourseCard";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { UserPlus, UserMinus } from "lucide-react";
 
 interface Profile {
@@ -25,10 +26,12 @@ interface Profile {
 export default function Profile() {
   const { id } = useParams();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [savedCourses, setSavedCourses] = useState<any[]>([]);
   const [trails, setTrails] = useState<any[]>([]);
+  const [followedCreators, setFollowedCreators] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
@@ -44,6 +47,7 @@ export default function Profile() {
       fetchCourses();
       fetchSavedCourses();
       fetchTrails();
+      fetchFollowedCreators();
       fetchFollowStats();
       checkFollowing();
     }
@@ -237,6 +241,84 @@ export default function Profile() {
     }
   };
 
+  const fetchFollowedCreators = async () => {
+    if (!currentUser || currentUser.id !== id) {
+      console.log("");
+      return;
+    }
+
+    try {
+
+      // First, get the following IDs
+      const { data: follows, error: followsError } = await supabase
+        .from("user_follows")
+        .select("following_id")
+        .eq("follower_id", id);
+
+      if (followsError) {
+        console.error("Erro ao buscar follows:", followsError);
+        return;
+      }
+
+      if (!follows || follows.length === 0) {
+        console.log("");
+        setFollowedCreators([]);
+        return;
+      }
+
+      const followingIds = follows.map(f => f.following_id);
+
+      // Then, fetch the profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url, is_verified_author")
+        .in("id", followingIds);
+
+      if (profilesError) {
+        console.error("Erro ao buscar profiles:", profilesError);
+        return;
+      }
+
+
+      // Then, for each profile, fetch their latest content
+      const creatorsWithContent = await Promise.all(
+        profiles.map(async (profile) => {
+          // Fetch latest course
+          const { data: courses } = await supabase
+            .from("courses")
+            .select("id, title, created_at")
+            .eq("author_id", profile.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          // Fetch latest trail
+          const { data: trails } = await supabase
+            .from("learning_trails")
+            .select("id, title, created_at")
+            .eq("creator_id", profile.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          const allContent = [
+            ...(courses || []).map(c => ({ ...c, type: 'course' })),
+            ...(trails || []).map(t => ({ ...t, type: 'trail' }))
+          ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+          const lastContent = allContent[0];
+
+          return {
+            ...profile,
+            lastContent
+          };
+        })
+      );
+
+      setFollowedCreators(creatorsWithContent);
+    } catch (error) {
+      console.error("Erro inesperado ao buscar criadores seguidos:", error);
+    }
+  };
+
   const fetchFollowStats = async () => {
     try {
       const { count: followers, error: followersError } = await supabase
@@ -382,10 +464,11 @@ export default function Profile() {
         </Card>
 
         <Tabs defaultValue="courses">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="courses">Cursos Criados ({courses.length})</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="courses">{isMobile ? "Cursos" : "Cursos Criados"} ({courses.length})</TabsTrigger>
             {isOwnProfile && <TabsTrigger value="saved">Salvos ({savedCourses.length})</TabsTrigger>}
             <TabsTrigger value="trails">Trilhas ({trails.length})</TabsTrigger>
+            {isOwnProfile && <TabsTrigger value="following">{isMobile ? "Seguindo" : "Criadores que você segue"} ({followedCreators.length})</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="courses" className="space-y-4 mt-6">
@@ -463,6 +546,45 @@ export default function Profile() {
               </div>
             )}
           </TabsContent>
+
+          {isOwnProfile && (
+            <TabsContent value="following" className="space-y-4 mt-6">
+              {followedCreators.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Você ainda não segue nenhum criador</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {followedCreators.map(creator => (
+                    <Card key={creator.id} className="hover:shadow-lg transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={creator.avatar_url || undefined} />
+                            <AvatarFallback>{creator.username[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">{creator.username}</h3>
+                              {creator.is_verified_author && (
+                                <Badge variant="secondary" className="text-xs">✓</Badge>
+                              )}
+                            </div>
+                            {creator.lastContent && (
+                              <p className="text-sm text-muted-foreground">
+                                Último {creator.lastContent.type === 'course' ? 'curso' : 'trilha'}: {creator.lastContent.title}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button asChild variant="outline" size="sm" className="w-full">
+                          <Link to={`/profile/${creator.id}`}>Ver cursos</Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>

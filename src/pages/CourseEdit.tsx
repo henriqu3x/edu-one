@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -35,12 +35,15 @@ interface UploadedVideo {
   bytes: number;
 }
 
-export default function CourseNew() {
+export default function CourseEdit() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [videoType, setVideoType] = useState<'external' | 'cloudinary_single' | 'cloudinary_playlist'>('external');
   const [uploadedVideos, setUploadedVideos] = useState<UploadedVideo[]>([]);
+  const [course, setCourse] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -54,14 +57,17 @@ export default function CourseNew() {
   useEffect(() => {
     checkAuth();
     fetchCategories();
-  }, []);
+    if (id) {
+      fetchCourse();
+    }
+  }, [id]);
 
   const checkAuth = async () => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
     if (!session) {
-      toast.error("Você precisa estar logado para criar um curso");
+      toast.error("Você precisa estar logado para editar um curso");
       navigate("/auth");
     }
   };
@@ -72,6 +78,81 @@ export default function CourseNew() {
       console.error("Error fetching categories:", error);
     } else {
       setCategories(data || []);
+    }
+  };
+
+  const fetchCourse = async () => {
+    setFetchLoading(true);
+    try {
+      const { data: courseData, error } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+
+      // Check if user is the author and course is approved
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || courseData.author_id !== user.id || courseData.status !== 'approved') {
+        toast.error("Você não tem permissão para editar este curso");
+        navigate(`/course/${id}`);
+        return;
+      }
+
+      // Check if there's already a pending edit
+      const { data: pendingEdit } = await supabase
+        .from("course_edits")
+        .select("*")
+        .eq("course_id", id)
+        .eq("status", "pending")
+        .single();
+
+      if (pendingEdit) {
+        toast.error("Já existe uma edição pendente para este curso");
+        navigate(`/course/${id}`);
+        return;
+      }
+
+      setCourse(courseData);
+
+      // Populate form data
+      setFormData({
+        title: courseData.title,
+        description: courseData.description,
+        category_id: courseData.category_id || "",
+        difficulty_level: courseData.difficulty_level,
+        content_url: courseData.content_url || "",
+        thumbnail_url: courseData.thumbnail_url || "",
+        tags: courseData.tags ? courseData.tags.join(", ") : "",
+      });
+
+      setVideoType(
+        (courseData.video_type === 'cloudinary_single' || 
+         courseData.video_type === 'cloudinary_playlist') 
+          ? courseData.video_type 
+          : 'external'
+      );
+
+      // Populate uploaded videos if Cloudinary
+      if (courseData.video_type === 'cloudinary_single' || courseData.video_type === 'cloudinary_playlist') {
+        if (courseData.video_urls && courseData.video_urls.length > 0) {
+          setUploadedVideos(courseData.video_urls.map((url: string, index: number) => ({
+            public_id: `video_${index}`,
+            secure_url: url,
+            thumbnail_url: null,
+            duration: null,
+            format: 'mp4',
+            bytes: 0
+          })));
+        }
+      }
+    } catch (error: any) {
+      console.error("Error fetching course:", error);
+      toast.error("Erro ao carregar curso");
+      navigate("/404");
+    } finally {
+      setFetchLoading(false);
     }
   };
 
@@ -104,19 +185,18 @@ export default function CourseNew() {
         .filter(Boolean);
 
       // Prepare video data
-      let videoTypeValue = videoType;
       let contentUrl = formData.content_url;
       let videoUrls = null;
 
       if (videoType === 'cloudinary_single' || videoType === 'cloudinary_playlist') {
-        videoTypeValue = videoType;
         contentUrl = null; // Not used for Cloudinary videos
         videoUrls = uploadedVideos.map(video => video.secure_url);
       }
 
       const { data, error } = await supabase
-        .from("courses")
+        .from("course_edits")
         .insert({
+          course_id: id,
           author_id: user.id,
           title: formData.title,
           description: formData.description,
@@ -125,8 +205,7 @@ export default function CourseNew() {
           content_url: contentUrl,
           thumbnail_url: formData.thumbnail_url || null,
           tags: tags.length > 0 ? tags : null,
-          status: "pending",
-          video_type: videoTypeValue,
+          video_type: videoType,
           video_urls: videoUrls,
         })
         .select()
@@ -134,15 +213,26 @@ export default function CourseNew() {
 
       if (error) throw error;
 
-      toast.success("Curso criado com sucesso!");
-      navigate(`/course/${data.id}`);
+      toast.success("Edição enviada para moderação!");
+      navigate(`/course/${id}`);
     } catch (error: any) {
-      console.error("Error creating course:", error);
-      toast.error(error.message || "Erro ao criar curso");
+      console.error("Error creating edit:", error);
+      toast.error(error.message || "Erro ao enviar edição");
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetchLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-8 text-center">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!course) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -150,16 +240,19 @@ export default function CourseNew() {
       <div className="container py-8 max-w-3xl">
         <Button
           variant="ghost"
-          onClick={() => navigate("/")}
+          onClick={() => navigate(`/course/${id}`)}
           className="mb-6 gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar
+          Voltar ao Curso
         </Button>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">Criar Novo Curso</CardTitle>
+            <CardTitle className="text-3xl">Editar Curso</CardTitle>
+            <p className="text-muted-foreground">
+              Suas alterações serão enviadas para moderação antes de serem aplicadas.
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -337,13 +430,13 @@ export default function CourseNew() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate(`/course/${id}`)}
                   className="flex-1"
                 >
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={loading} className="flex-1">
-                  {loading ? "Criando..." : "Criar Curso"}
+                  {loading ? "Enviando..." : "Enviar para Moderação"}
                 </Button>
               </div>
             </form>

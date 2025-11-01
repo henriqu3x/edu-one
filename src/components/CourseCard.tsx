@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Eye, Heart, BookmarkPlus, Verified, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CategoryIcon } from "@/lib/icons";
 
 interface CourseCardProps {
   id: string;
@@ -59,7 +60,11 @@ export const CourseCard = ({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
-              <span className="text-4xl">{category?.icon || "📚"}</span>
+              {category ? (
+                <CategoryIcon iconName={category.icon} className="h-12 w-12 text-foreground" />
+              ) : (
+                <span className="text-4xl">📚</span>
+              )}
             </div>
           )}
           <div className="absolute top-2 right-2">
@@ -156,8 +161,9 @@ export const CourseCard = ({
           </span>
         </div>
         {category && (
-          <Badge variant="secondary" className="text-xs">
-            {category.icon} {category.name}
+          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+            <CategoryIcon iconName={category.icon} className="h-3 w-3" />
+            {category.name}
           </Badge>
         )}
       </CardFooter>
