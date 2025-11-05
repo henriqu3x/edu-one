@@ -1,73 +1,115 @@
-# Welcome to your Lovable project
+# Educa+ - Plataforma de Aprendizado Colaborativo
 
-## Project info
+Uma plataforma educacional colaborativa onde usuários podem compartilhar e descobrir minicursos gratuitos, dicas de estudo e conteúdos criados pela comunidade.
 
-**URL**: https://lovable.dev/projects/dd6751ef-81da-4d5e-8dd8-c7944af471a8
+## Sobre o Educa+
 
-## How can I edit this code?
+O Educa+ é uma plataforma desenvolvida para democratizar o acesso ao conhecimento, permitindo que qualquer pessoa possa compartilhar seu saber através de minicursos interativos, trilhas de aprendizado e discussões no fórum. Nossa missão é criar uma comunidade de aprendizado contínuo e colaborativo.
 
-There are several ways of editing your application.
+## Funcionalidades Principais
 
-**Use Lovable**
+- **📚 Cursos Interativos**: Crie e consuma minicursos com vídeos, textos e exercícios
+- **🛤️ Trilhas de Aprendizado**: Organize cursos em sequências temáticas
+- **💬 Fórum da Comunidade**: Discuta tópicos, tire dúvidas e compartilhe experiências
+- **👤 Perfis de Usuários**: Sistema de perfis com níveis, pontos e verificação de autores
+- **⭐ Sistema de Avaliação**: Avalie e comente cursos
+- **🔍 Busca Avançada**: Encontre conteúdos por categoria, dificuldade ou palavras-chave
+- **🛡️ Moderação**: Sistema de moderação para manter a qualidade do conteúdo
+- **👑 Painel Administrativo**: Gerencie usuários, cursos e configurações da plataforma
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dd6751ef-81da-4d5e-8dd8-c7944af471a8) and start prompting.
+## Tecnologias Utilizadas
 
-Changes made via Lovable will be committed automatically to this repo.
+Este projeto foi construído com tecnologias modernas e robustas:
 
-**Use your preferred IDE**
+### Frontend
+- **React 18** - Biblioteca JavaScript para interfaces de usuário
+- **TypeScript** - Superset tipado do JavaScript
+- **Vite** - Build tool e dev server ultrarrápido
+- **Tailwind CSS** - Framework CSS utilitário
+- **shadcn/ui** - Componentes UI acessíveis e customizáveis
+- **Framer Motion** - Animações e transições suaves
+- **React Router** - Roteamento do lado cliente
+- **React Query** - Gerenciamento de estado server e cache
+- **React Hook Form** - Formulários performáticos
+- **Zod** - Validação de schemas
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Backend & Banco de Dados
+- **Supabase** - Backend-as-a-Service (Auth, Database, Storage)
+- **PostgreSQL** - Banco de dados relacional
+- **Prisma** - ORM para TypeScript & Node.js
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Como Contribuir
 
-Follow these steps:
+### Desenvolvimento Local
+
+**Pré-requisitos:**
+- Node.js (versão 18 ou superior) - [instalar com nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- npm ou bun
+
+**Passos para desenvolvimento:**
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# 1. Clone o repositório
+git clone <URL_DO_SEU_REPOSITORIO>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. Entre no diretório do projeto
+cd educa-mais
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Instale as dependências
+npm install
+# ou
+bun install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Configure as variáveis de ambiente
+cp .env.example .env.local
+# Edite o .env.local com suas configurações do Supabase
+
+# 5. Execute as migrações do banco (se necessário)
+npx supabase db push
+
+# 6. Inicie o servidor de desenvolvimento
 npm run dev
+# ou
+bun run dev
 ```
 
-**Edit a file directly in GitHub**
+O projeto estará disponível em `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Scripts Disponíveis
 
-**Use GitHub Codespaces**
+- `npm run dev` - Inicia o servidor de desenvolvimento
+- `npm run build` - Build para produção
+- `npm run build:dev` - Build para desenvolvimento
+- `npm run lint` - Executa o linter
+- `npm run preview` - Preview do build de produção
+- `npm run generate-sitemap` - Gera sitemap do site
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Estrutura do Projeto
 
-## What technologies are used for this project?
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   ├── ui/             # Componentes base (shadcn/ui)
+│   └── ...             # Componentes específicos
+├── pages/              # Páginas da aplicação
+├── hooks/              # Custom hooks
+├── lib/                # Utilitários e configurações
+├── integrations/       # Integrações externas (Supabase, etc.)
+├── providers/          # Context providers
+└── assets/             # Imagens e recursos estáticos
 
-This project is built with:
+supabase/
+├── migrations/         # Migrações do banco de dados
+└── functions/          # Edge functions
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+prisma/                 # Schema do Prisma (opcional)
+scripts/                # Scripts utilitários
+```
 
-## How can I deploy this project?
+## Licença
 
-Simply open [Lovable](https://lovable.dev/projects/dd6751ef-81da-4d5e-8dd8-c7944af471a8) and click on Share -> Publish.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## Can I connect a custom domain to my Lovable project?
+## Contato
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Para dúvidas, sugestões ou contribuições, entre em contato através das issues do GitHub ou do fórum da plataforma.
