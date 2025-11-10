@@ -26,9 +26,11 @@ import Admin from "./pages/Admin";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import { AdminRoute } from "./pages/AdminRoute";
 
 import { LenisProvider, useLenisContext } from "@/providers/LenisProvider";
 import PageTransition from "@/components/PageTransition";
+import { ModerationRoute } from "./pages/ModerationRoute";
 
 const queryClient = new QueryClient();
 
@@ -68,8 +70,8 @@ function AppRoutes() {
         <Route path="/trail/:id" element={<PageTransition><TrailDetail /></PageTransition>} />
         <Route path="/trail/new" element={<PageTransition><TrailNew /></PageTransition>} />
         <Route path="/trail/:id/edit" element={<PageTransition><TrailNew /></PageTransition>} />
-        <Route path="/moderation" element={<PageTransition><Moderation /></PageTransition>} />
-        <Route path="/admin" element={<PageTransition><Admin /></PageTransition>} />
+        <Route path="/moderation" element={<ModerationRoute><PageTransition><Moderation /></PageTransition></ModerationRoute>} />
+        <Route path="/admin" element={<AdminRoute><PageTransition><Admin /></PageTransition></AdminRoute>} />
         <Route path="/terms" element={<PageTransition><Terms /></PageTransition>} />
         <Route path="/privacy" element={<PageTransition><Privacy /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />

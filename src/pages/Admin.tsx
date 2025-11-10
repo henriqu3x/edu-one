@@ -187,7 +187,6 @@ export default function Admin() {
     icon: 'Book', // Default icon
   });
 
-  // Icon mapping for categories
   const iconMap: { [key: string]: LucideIcon } = {
     Book, Code, Laptop, Paintbrush, Music, Camera, Heart, Lightbulb,
     Brain, Languages, GraduationCap, Briefcase, Globe, Home, Smartphone,
@@ -196,38 +195,37 @@ export default function Admin() {
     ShoppingCart, CreditCard, Wallet, Tag, Gift, Award, Star, MessageCircle
   };
 
-  // List of available icon names for categories
   const categoryIcons: IconName[] = Object.keys(iconComponents) as IconName[];
   const { toast } = useToast();
 
   useEffect(() => {
-    checkAdminAccess();
+    // checkAdminAccess();
     fetchData();
   }, []);
 
-  const checkAdminAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      window.location.href = "/auth";
-      return;
-    }
+  // const checkAdminAccess = async () => {
+  //   const { data: { user } } = await supabase.auth.getUser();
+  //   if (!user) {
+  //     window.location.href = "/auth";
+  //     return;
+  //   }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
+  //   const { data: roles } = await supabase
+  //     .from("user_roles")
+  //     .select("role")
+  //     .eq("user_id", user.id);
 
-    const isAdmin = roles?.some(r => r.role === "admin");
+  //   const isAdmin = roles?.some(r => r.role === "admin");
     
-    if (!isAdmin) {
-      toast({
-        title: "Acesso Negado",
-        description: "Você não tem permissão para acessar esta página.",
-        variant: "destructive",
-      });
-      window.location.href = "/";
-    }
-  };
+  //   if (!isAdmin) {
+  //     toast({
+  //       title: "Acesso Negado",
+  //       description: "Você não tem permissão para acessar esta página.",
+  //       variant: "destructive",
+  //     });
+  //     window.location.href = "/";
+  //   }
+  // };
 
   const fetchData = async () => {
     setLoading(true);
