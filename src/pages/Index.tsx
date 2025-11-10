@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, TrendingUp, BookOpen } from "lucide-react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
+import { Helmet } from "react-helmet-async";
 
 interface Course {
   id: string;
@@ -85,10 +86,22 @@ export default function Index() {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>EduOne | Plataforma de Cursos Gratuitos</title>
+
+        <meta name="description" content="Compartilhe e aprenda com cursos gratuitos, dicas de estudo e conteúdos criados pela comunidade. Educação colaborativa para todos." />
+        <meta name="author" content="EduOne" />
+        <meta name="keywords" content="educação, cursos gratuitos, aprendizado colaborativo, minicursos, dicas de estudo" />
+        <meta property="og:title" content="EduOne | Aprendizado Colaborativo" />
+        <meta property="og:description" content="Descubra minicursos gratuitos e conteúdos criados pela comunidade. Compartilhe conhecimento!" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://educamais1.netlify.app" />
+        <meta property="og:image" content="https://educamais1.netlify.app/favicon.ico" />
+      </Helmet>
+
     <div className="min-h-screen bg-background">
       <Navbar />
-
-      {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10" />
         <div className="container relative py-20 md:py-32">
@@ -193,7 +206,7 @@ export default function Index() {
         <div className="container py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
-              © 2025 Educa+. Todos os direitos reservados.
+              © 2025 EduOne. Todos os direitos reservados.
             </p>
             <div className="flex gap-6 text-sm">
               <a href="/terms" className="text-muted-foreground hover:text-primary transition-colors">
@@ -207,5 +220,6 @@ export default function Index() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

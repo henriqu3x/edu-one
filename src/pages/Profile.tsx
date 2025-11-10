@@ -11,6 +11,7 @@ import { CourseCard } from "@/components/CourseCard";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { UserPlus, UserMinus } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 interface Profile {
   id: string;
@@ -23,6 +24,22 @@ interface Profile {
   total_points: number;
 }
 
+interface Trail {
+  id: string;
+  title: string;
+  description: string | null;
+  creator_id: string;
+  status: 'draft' | 'published' | 'archived';
+  created_at: string;
+  updated_at: string;
+  profiles?: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+    is_verified_author: boolean;
+  };
+}
+
 export default function Profile() {
   const { id } = useParams();
   const { toast } = useToast();
@@ -30,7 +47,8 @@ export default function Profile() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [savedCourses, setSavedCourses] = useState<any[]>([]);
-  const [trails, setTrails] = useState<any[]>([]);
+  const [createdTrails, setCreatedTrails] = useState<any[]>([]);
+  const [followedTrails, setFollowedTrails] = useState<any[]>([]);
   const [followedCreators, setFollowedCreators] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -46,7 +64,8 @@ export default function Profile() {
       fetchProfile();
       fetchCourses();
       fetchSavedCourses();
-      fetchTrails();
+      fetchCreatedTrails();
+      fetchFollowedTrails();
       fetchFollowedCreators();
       fetchFollowStats();
       checkFollowing();
@@ -109,7 +128,8 @@ export default function Profile() {
         if (currentUser.id === id) {
           fetchCourses();
           fetchSavedCourses();
-          fetchTrails();
+          fetchCreatedTrails();
+          fetchFollowedTrails();
           fetchFollowStats();
         }
       }
@@ -222,22 +242,93 @@ export default function Profile() {
     }
   };
 
-  const fetchTrails = async () => {
+  const fetchCreatedTrails = async () => {
+    if (!id) return;
+    
     try {
       const { data, error } = await supabase
         .from("learning_trails")
-        .select()
+        .select(`
+          *,
+          profiles:creator_id (id, username, avatar_url, is_verified_author)
+        `)
         .eq("creator_id", id)
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Erro ao buscar trilhas:", error);
+        console.error("Erro ao buscar trilhas criadas:", error);
         return;
       }
 
-      if (data) setTrails(data);
+      if (data) {
+        // Garante que os perfis estejam no formato correto
+        const formattedData = data.map(trail => ({
+          ...trail,
+          profiles: trail.profiles ? {
+            id: trail.profiles.id,
+            username: trail.profiles.username || 'Usuário',
+            avatar_url: trail.profiles.avatar_url,
+            is_verified_author: trail.profiles.is_verified_author || false
+          } : undefined
+        }));
+        
+        setCreatedTrails(formattedData);
+      }
     } catch (error) {
-      console.error("Erro inesperado ao buscar trilhas:", error);
+      console.error("Erro inesperado ao buscar trilhas criadas:", error);
+    }
+  };
+
+  const fetchFollowedTrails = async () => {
+    if (!id) return;
+    
+    try {
+      // Usando a tabela trail_followers diretamente com um join explícito
+      const { data: trailFollows, error: followsError } = await supabase
+        .from('trail_followers')
+        .select(`
+          *,
+          learning_trails!inner(
+            *,
+            profiles:creator_id (id, username, avatar_url, is_verified_author)
+          )
+        `)
+        .eq('user_id', id);
+
+      if (followsError) {
+        console.error('Erro ao buscar trilhas seguidas:', followsError);
+        return;
+      }
+
+      if (trailFollows && trailFollows.length > 0) {
+        // Mapeia os dados para o formato esperado
+        const trailsData = trailFollows.map(trail => {
+          // Acessa os dados da trilha através da relação learning_trails
+          const trailData = trail.learning_trails as any; // Usando any temporariamente
+          
+          return {
+            id: trailData.id,
+            title: trailData.title,
+            description: trailData.description,
+            creator_id: trailData.creator_id,
+            status: trailData.status,
+            created_at: trailData.created_at,
+            updated_at: trailData.updated_at,
+            profiles: trailData.profiles ? {
+              id: trailData.profiles.id,
+              username: trailData.profiles.username || 'Usuário',
+              avatar_url: trailData.profiles.avatar_url,
+              is_verified_author: trailData.profiles.is_verified_author || false
+            } : undefined
+          };
+        });
+        
+        setFollowedTrails(trailsData);
+      } else {
+        setFollowedTrails([]);
+      }
+    } catch (error) {
+      console.error('Erro inesperado ao buscar trilhas seguidas:', error);
     }
   };
 
@@ -423,6 +514,26 @@ export default function Profile() {
   const isOwnProfile = currentUser?.id === id;
 
   return (
+    <>
+      <Helmet>
+        <title>Perfil | EduOne</title>
+
+        <meta
+          name="description"
+          content="Explore seu perfil no EduOne — veja seus cursos, trilhas e conquistas enquanto avança na sua jornada de aprendizado."
+        />
+
+        <meta property="og:title" content="Ver Perfil | EduOne" />
+        <meta
+          property="og:description"
+          content="Explore perfis de criadores no EduOne — veja seus cursos, trilhas e conquistas enquanto avançam na jornada de aprendizado."
+        />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://educamais1.netlify.app/profile" />
+        <meta property="og:image" content="https://educamais1.netlify.app/favicon.ico" />
+      </Helmet>
+
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container py-8 max-w-6xl">
@@ -464,11 +575,12 @@ export default function Profile() {
         </Card>
 
         <Tabs defaultValue="courses">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="courses">{isMobile ? "Cursos" : "Cursos Criados"} ({courses.length})</TabsTrigger>
-            {isOwnProfile && <TabsTrigger value="saved">Salvos ({savedCourses.length})</TabsTrigger>}
-            <TabsTrigger value="trails">Trilhas ({trails.length})</TabsTrigger>
-            {isOwnProfile && <TabsTrigger value="following">{isMobile ? "Seguindo" : "Criadores que você segue"} ({followedCreators.length})</TabsTrigger>}
+          <TabsList className="w-full overflow-x-auto">
+            <TabsTrigger value="courses" className="flex-1">{isMobile ? "Cursos" : "Cursos Criados"} ({courses.length})</TabsTrigger>
+            {isOwnProfile && <TabsTrigger value="saved" className="flex-1">Salvos ({savedCourses.length})</TabsTrigger>}
+            <TabsTrigger value="created-trails" className="flex-1">Minhas Trilhas ({createdTrails.length})</TabsTrigger>
+            <TabsTrigger value="followed-trails" className="flex-1">Trilhas Seguidas ({followedTrails.length})</TabsTrigger>
+            {isOwnProfile && <TabsTrigger value="following" className="flex-1">{isMobile ? "Seguindo" : "Criadores"} ({followedCreators.length})</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="courses" className="space-y-4 mt-6">
@@ -521,25 +633,112 @@ export default function Profile() {
             </TabsContent>
           )}
 
-          <TabsContent value="trails" className="space-y-4 mt-6">
-            {trails.length === 0 ? (
+          <TabsContent value="created-trails" className="space-y-4 mt-6">
+            {createdTrails.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Nenhuma trilha criada ainda</p>
+                <p className="text-muted-foreground mb-4">
+                  {isOwnProfile 
+                    ? "Você ainda não criou nenhuma trilha" 
+                    : "Este usuário ainda não criou nenhuma trilha"}
+                </p>
                 {isOwnProfile && (
                   <Button asChild>
-                    <Link to="/trail/new">Criar Trilha</Link>
+                    <Link to="/trail/new">Criar primeira trilha</Link>
                   </Button>
                 )}
               </div>
             ) : (
               <div className="grid gap-4">
-                {trails.map(trail => (
-                  <Link key={trail.id} to={`/trail/${trail.id}`}>
-                    <Card className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <CardTitle>{trail.title}</CardTitle>
-                        {trail.description && <p className="text-sm text-muted-foreground">{trail.description}</p>}
-                      </CardHeader>
+                {createdTrails.map(trail => (
+                  <Link key={trail.id} to={`/trail/${trail.id}`} className="block">
+                    <Card className="hover:shadow-lg transition-shadow h-full">
+                      <div className="p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h3 className="text-lg font-semibold">{trail.title}</h3>
+                            {trail.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {trail.description.length > 120 
+                                  ? `${trail.description.substring(0, 120)}...` 
+                                  : trail.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                              <span>Status: </span>
+                              <Badge variant="outline" className="text-xs">
+                                {trail.status === 'draft' ? 'Rascunho' : 
+                                 trail.status === 'published' ? 'Arquivado' : 'Publicado'}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground">
+                              Criado em {new Date(trail.created_at).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="followed-trails" className="space-y-4 mt-6">
+            {followedTrails.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  {isOwnProfile 
+                    ? "Você ainda não está seguindo nenhuma trilha" 
+                    : "Este usuário ainda não está seguindo nenhuma trilha"}
+                </p>
+                {isOwnProfile && (
+                  <Button asChild variant="outline">
+                    <Link to="/trails">Explorar trilhas</Link>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {followedTrails.map(trail => (
+                  <Link key={trail.id} to={`/trail/${trail.id}`} className="block">
+                    <Card className="hover:shadow-lg transition-shadow h-full">
+                      <div className="p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h3 className="text-lg font-semibold">{trail.title}</h3>
+                            {trail.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {trail.description.length > 120 
+                                  ? `${trail.description.substring(0, 120)}...` 
+                                  : trail.description}
+                              </p>
+                            )}
+                            {trail.profiles && (
+                              <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={trail.profiles.avatar_url || undefined} />
+                                  <AvatarFallback>{trail.profiles.username?.[0]}</AvatarFallback>
+                                </Avatar>
+                                <span>por {trail.profiles.username}</span>
+                                {trail.profiles.is_verified_author && (
+                                  <Badge variant="secondary" className="text-xs">✓ Verificado</Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <Badge variant="outline" className="mb-2">
+                              {trail.status === 'draft' ? 'Rascunho' : 
+                               trail.status === 'published' ? 'Arquivado' : 'Publicado'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              Trilha Criada Em: {new Date(trail.created_at).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </Card>
                   </Link>
                 ))}
@@ -588,5 +787,6 @@ export default function Profile() {
         </Tabs>
       </div>
     </div>
+    </>
   );
 }

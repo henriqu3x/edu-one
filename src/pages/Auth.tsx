@@ -112,9 +112,11 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-2">
-            <span className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Educa+
-            </span>
+            <img 
+              src="/logo_b.png"       
+              alt="EduOne Logo"
+              className="h-12 w-auto" 
+            />
           </div>
         </div>
 

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MessageSquare, Plus, User, Clock, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 interface Topic {
   id: string;
@@ -135,131 +136,150 @@ export default function Forum() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Fórum</h1>
-            <p className="text-muted-foreground">
-              Espaço de discussão para tirar dúvidas e compartilhar conhecimentos
-            </p>
-          </div>
+    <>
+      <Helmet>
+        <title>Fórum | EduOne</title>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Tópico
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Criar Novo Tópico</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="topic-title">Título*</Label>
-                  <Input
-                    id="topic-title"
-                    value={newTopicTitle}
-                    onChange={(e) => setNewTopicTitle(e.target.value)}
-                    placeholder="Digite o título do tópico..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="topic-content">Conteúdo*</Label>
-                  <Textarea
-                    id="topic-content"
-                    value={newTopicContent}
-                    onChange={(e) => setNewTopicContent(e.target.value)}
-                    placeholder="Descreva sua dúvida ou compartilhe seu conhecimento..."
-                    rows={6}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={createTopic}
-                    disabled={creatingTopic}
-                  >
-                    {creatingTopic ? "Criando..." : "Criar Tópico"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <meta
+          name="description"
+          content="Participe do Fórum EduOne — um espaço para discutir dúvidas, compartilhar conhecimento e interagir com a comunidade."
+        />
 
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Carregando tópicos...</p>
-          </div>
-        ) : topics.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum tópico ainda</h3>
-              <p className="text-muted-foreground mb-4">
-                Seja o primeiro a iniciar uma discussão!
+        <meta property="og:title" content="Fórum | EduOne" />
+        <meta
+          property="og:description"
+          content="Junte-se ao Fórum EduOne e participe de discussões sobre educação, tecnologia, cursos e aprendizado."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://educamais1.netlify.app/forum" />
+        <meta property="og:image" content="https://educamais1.netlify.app/favicon.ico" />
+      </Helmet>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container py-8">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Fórum</h1>
+              <p className="text-muted-foreground">
+                Espaço de discussão para tirar dúvidas e compartilhar conhecimentos
               </p>
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Tópico
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {topics.map((topic) => (
-              <Card key={topic.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-primary" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <Link to={`/forum/${topic.id}`}>
-                        <h3 className="text-lg font-semibold hover:text-primary transition-colors line-clamp-1">
-                          {topic.title}
-                        </h3>
-                      </Link>
-                      <p className="text-muted-foreground mt-1 line-clamp-2">
-                        {topic.content}
-                      </p>
-                      <div className={`flex items-center gap-4 mt-3 text-sm text-muted-foreground ${isMobile ? 'flex-wrap' : ''}`}>
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          <span>{topic.profiles?.full_name || topic.profiles?.username || 'Usuário'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{isMobile ? formatDate(topic.created_at).split(' ')[0] : formatDate(topic.created_at)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="w-4 h-4" />
-                          <span>{topic.reply_count} {isMobile ? 'resp.' : 'respostas'}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Eye className="w-4 h-4" />
-                          <span>{topic.view_count} {isMobile ? 'vis.' : 'visualizações'}</span>
-                        </div>
-                      </div>
-                    </div>
+            </div>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Tópico
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Criar Novo Tópico</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="topic-title">Título*</Label>
+                    <Input
+                      id="topic-title"
+                      value={newTopicTitle}
+                      onChange={(e) => setNewTopicTitle(e.target.value)}
+                      placeholder="Digite o título do tópico..."
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <div className="space-y-2">
+                    <Label htmlFor="topic-content">Conteúdo*</Label>
+                    <Textarea
+                      id="topic-content"
+                      value={newTopicContent}
+                      onChange={(e) => setNewTopicContent(e.target.value)}
+                      placeholder="Descreva sua dúvida ou compartilhe seu conhecimento..."
+                      rows={6}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={createTopic}
+                      disabled={creatingTopic}
+                    >
+                      {creatingTopic ? "Criando..." : "Criar Tópico"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
-        )}
-      </main>
-    </div>
+
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Carregando tópicos...</p>
+            </div>
+          ) : topics.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum tópico ainda</h3>
+                <p className="text-muted-foreground mb-4">
+                  Seja o primeiro a iniciar uma discussão!
+                </p>
+                <Button onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Primeiro Tópico
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {topics.map((topic) => (
+                <Card key={topic.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link to={`/forum/${topic.id}`}>
+                          <h3 className="text-lg font-semibold hover:text-primary transition-colors line-clamp-1">
+                            {topic.title}
+                          </h3>
+                        </Link>
+                        <p className="text-muted-foreground mt-1 line-clamp-2">
+                          {topic.content}
+                        </p>
+                        <div className={`flex items-center gap-4 mt-3 text-sm text-muted-foreground ${isMobile ? 'flex-wrap' : ''}`}>
+                          <div className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            <span>{topic.profiles?.full_name || topic.profiles?.username || 'Usuário'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            <span>{isMobile ? formatDate(topic.created_at).split(' ')[0] : formatDate(topic.created_at)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MessageSquare className="w-4 h-4" />
+                            <span>{topic.reply_count} {isMobile ? 'resp.' : 'respostas'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            <span>{topic.view_count} {isMobile ? 'vis.' : 'visualizações'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 }

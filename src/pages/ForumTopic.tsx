@@ -11,6 +11,7 @@ import { ArrowLeft, MessageSquare, Send, User, Flag } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Helmet } from "react-helmet-async";
 
 interface Topic {
   id: string;
@@ -324,151 +325,118 @@ export default function ForumTopic() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container py-8">
-        <div className="mb-6">
-          <Link to="/forum">
-            <Button variant="ghost" className="mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Fórum
-            </Button>
-          </Link>
+    <>
+      <Helmet>
+        <title>{`${topic.title} | Fórum EduOne`}</title>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-start gap-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={topic.profiles?.avatar_url} />
-                  <AvatarFallback>
-                    {topic.profiles?.full_name?.[0] || topic.profiles?.username?.[0] || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <CardTitle className="text-2xl mb-2">{topic.title}</CardTitle>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <User className="w-4 h-4" />
-                      <span>{topic.profiles?.full_name || topic.profiles?.username || "Usuário"}</span>
-                    </div>
-                    <span>{formatDate(topic.created_at)}</span>
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="w-4 h-4" />
-                      <span>{replies.length} respostas</span>
-                    </div>
-                    {user && (
-                      <Dialog open={showTopicReportDialog} onOpenChange={setShowTopicReportDialog}>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground hover:text-red-500"
-                            disabled={isTopicReported}
-                            onClick={() => setShowTopicReportDialog(true)}
-                          >
-                            <Flag className="h-3.5 w-3.5 mr-1" />
-                            {isTopicReported ? 'Tópico denunciado' : 'Denunciar tópico'}
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Denunciar Tópico</DialogTitle>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="topic-reason" className="text-right">
-                                Motivo
-                              </Label>
-                              <Input
-                                id="topic-reason"
-                                value={reportReason}
-                                onChange={(e) => setReportReason(e.target.value)}
-                                className="col-span-3"
-                                placeholder="Descreva o motivo da denúncia"
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button
-                              type="submit"
-                              onClick={handleReportTopic}
-                              disabled={!reportReason.trim() || reporting}
-                            >
-                              {reporting ? "Enviando..." : "Enviar Denúncia"}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground whitespace-pre-wrap">{topic.content}</p>
-            </CardContent>
-          </Card>
-        </div>
+        <meta
+          name="description"
+          content={
+            topic.content?.slice(0, 160) ||
+            "Discussão no fórum EduOne sobre educação, tecnologia e aprendizado."
+          }
+        />
 
-        <div className="space-y-4 mb-8">
-          <h3 className="text-xl font-semibold">Respostas ({replies.length})</h3>
+        <meta property="og:title" content={topic.title} />
+        <meta
+          property="og:description"
+          content={
+            topic.content ||
+            "Discussão completa disponível no Fórum EduOne."
+          }
+        />
+        <meta
+          property="og:image"
+          content={topic.profiles?.avatar_url || "/favicon.ico"}
+        />
 
-          {replies.map((reply) => (
-            <Card key={reply.id}>
-              <CardContent className="p-6">
+        <meta property="og:type" content="article" />
+        <meta
+          property="og:url"
+          content={`https://educamais1.netlify.app/forum/${id}`}
+        />
+
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "DiscussionForumPosting",
+            headline: topic.title,
+            articleBody: topic.content,
+            author: {
+              "@type": "Person",
+              name:
+                topic.profiles?.full_name ||
+                topic.profiles?.username ||
+                "Usuário",
+            },
+            datePublished: topic.created_at,
+            discussionUrl: `https://educamais1.netlify.app/forum/${id}`,
+            publisher: {
+              "@type": "Organization",
+              name: "EduOne",
+              url: "https://educamais1.netlify.app",
+            },
+          })}
+        </script>
+      </Helmet>
+
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container py-8">
+          <div className="mb-6">
+            <Link to="/forum">
+              <Button variant="ghost" className="mb-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar ao Fórum
+              </Button>
+            </Link>
+
+            <Card>
+              <CardHeader>
                 <div className="flex items-start gap-4">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={reply.profiles?.avatar_url} />
+                  <Avatar className="w-12 h-12">
+                    <AvatarImage src={topic.profiles?.avatar_url} />
                     <AvatarFallback>
-                      {reply.profiles?.full_name?.[0] || reply.profiles?.username?.[0] || "U"}
+                      {topic.profiles?.full_name?.[0] || topic.profiles?.username?.[0] || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-medium">
-                        {reply.profiles?.full_name || reply.profiles?.username || "Usuário"}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(reply.created_at).toLocaleString("pt-BR")}
-                        </p>
-                        <Dialog open={showReplyReportDialog && currentReportId === reply.id} onOpenChange={(open) => {
-                          if (!open) {
-                            setShowReplyReportDialog(false);
-                            setCurrentReportId(null);
-                            setReportReason("");
-                          }
-                        }}>
+                    <CardTitle className="text-2xl mb-2">{topic.title}</CardTitle>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        <span>{topic.profiles?.full_name || topic.profiles?.username || "Usuário"}</span>
+                      </div>
+                      <span>{formatDate(topic.created_at)}</span>
+                      <div className="flex items-center gap-1">
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{replies.length} respostas</span>
+                      </div>
+                      {user && (
+                        <Dialog open={showTopicReportDialog} onOpenChange={setShowTopicReportDialog}>
                           <DialogTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="icon"
-                              className={`h-6 w-6 ${reportedReplies.has(reply.id) ? 'text-gray-500' : 'text-muted-foreground hover:text-red-500'}`}
-                              onClick={() => {
-                                setCurrentReportId(reply.id);
-                                setReportReason("");
-                                setShowReplyReportDialog(true);
-                              }}
-                              disabled={reportedReplies.has(reply.id)}
-                              title={reportedReplies.has(reply.id) ? 'Você já denunciou esta resposta' : 'Denunciar resposta'}
+                              size="sm"
+                              className="text-muted-foreground hover:text-red-500"
+                              disabled={isTopicReported}
+                              onClick={() => setShowTopicReportDialog(true)}
                             >
-                              <Flag className="h-3.5 w-3.5" />
-                              <span className="sr-only">
-                                {reportedReplies.has(reply.id) ? 'Você já denunciou esta resposta' : 'Denunciar resposta'}
-                              </span>
+                              <Flag className="h-3.5 w-3.5 mr-1" />
+                              {isTopicReported ? 'Tópico denunciado' : 'Denunciar tópico'}
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Denunciar Resposta</DialogTitle>
+                              <DialogTitle>Denunciar Tópico</DialogTitle>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="reason" className="text-right">
+                                <Label htmlFor="topic-reason" className="text-right">
                                   Motivo
                                 </Label>
                                 <Input
-                                  id="reason"
+                                  id="topic-reason"
                                   value={reportReason}
                                   onChange={(e) => setReportReason(e.target.value)}
                                   className="col-span-3"
@@ -479,7 +447,7 @@ export default function ForumTopic() {
                             <DialogFooter>
                               <Button
                                 type="submit"
-                                onClick={() => handleReport(reply.id)}
+                                onClick={handleReportTopic}
                                 disabled={!reportReason.trim() || reporting}
                               >
                                 {reporting ? "Enviando..." : "Enviar Denúncia"}
@@ -487,58 +455,147 @@ export default function ForumTopic() {
                             </DialogFooter>
                           </DialogContent>
                         </Dialog>
-                      </div>
+                      )}
                     </div>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{reply.content}</p>
                   </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground whitespace-pre-wrap">{topic.content}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            <h3 className="text-xl font-semibold">Respostas ({replies.length})</h3>
+
+            {replies.map((reply) => (
+              <Card key={reply.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={reply.profiles?.avatar_url} />
+                      <AvatarFallback>
+                        {reply.profiles?.full_name?.[0] || reply.profiles?.username?.[0] || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium">
+                          {reply.profiles?.full_name || reply.profiles?.username || "Usuário"}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(reply.created_at).toLocaleString("pt-BR")}
+                          </p>
+                          <Dialog open={showReplyReportDialog && currentReportId === reply.id} onOpenChange={(open) => {
+                            if (!open) {
+                              setShowReplyReportDialog(false);
+                              setCurrentReportId(null);
+                              setReportReason("");
+                            }
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={`h-6 w-6 ${reportedReplies.has(reply.id) ? 'text-gray-500' : 'text-muted-foreground hover:text-red-500'}`}
+                                onClick={() => {
+                                  setCurrentReportId(reply.id);
+                                  setReportReason("");
+                                  setShowReplyReportDialog(true);
+                                }}
+                                disabled={reportedReplies.has(reply.id)}
+                                title={reportedReplies.has(reply.id) ? 'Você já denunciou esta resposta' : 'Denunciar resposta'}
+                              >
+                                <Flag className="h-3.5 w-3.5" />
+                                <span className="sr-only">
+                                  {reportedReplies.has(reply.id) ? 'Você já denunciou esta resposta' : 'Denunciar resposta'}
+                                </span>
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Denunciar Resposta</DialogTitle>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="reason" className="text-right">
+                                    Motivo
+                                  </Label>
+                                  <Input
+                                    id="reason"
+                                    value={reportReason}
+                                    onChange={(e) => setReportReason(e.target.value)}
+                                    className="col-span-3"
+                                    placeholder="Descreva o motivo da denúncia"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  type="submit"
+                                  onClick={() => handleReport(reply.id)}
+                                  disabled={!reportReason.trim() || reporting}
+                                >
+                                  {reporting ? "Enviando..." : "Enviar Denúncia"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground whitespace-pre-wrap">{reply.content}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {user ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Sua Resposta</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  value={newReply}
+                  onChange={(e) => setNewReply(e.target.value)}
+                  placeholder="Digite sua resposta..."
+                  rows={4}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    onClick={postReply}
+                    disabled={postingReply || !newReply.trim()}
+                  >
+                    {postingReply ? (
+                      "Enviando..."
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Enviar Resposta
+                      </>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-
-        {user ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Sua Resposta</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                value={newReply}
-                onChange={(e) => setNewReply(e.target.value)}
-                placeholder="Digite sua resposta..."
-                rows={4}
-              />
-              <div className="flex justify-end">
-                <Button
-                  onClick={postReply}
-                  disabled={postingReply || !newReply.trim()}
-                >
-                  {postingReply ? (
-                    "Enviando..."
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Enviar Resposta
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
-                Faça login para participar da discussão
-              </p>
-              <Link to="/auth">
-                <Button>Entrar</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-      </main>
-    </div>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  Faça login para participar da discussão
+                </p>
+                <Link to="/auth">
+                  <Button>Entrar</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+        </main>
+      </div>
+    </>
   );
 }

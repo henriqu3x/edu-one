@@ -125,12 +125,12 @@ export default function Explore() {
   return (
     <>
       <Helmet>
-        <title>Explorar Cursos | Educa+</title>
+        <title>Explorar Cursos | EduOne</title>
         <meta
           name="description"
           content="Descubra cursos gratuitos e de alta qualidade em diversas áreas do conhecimento — tudo organizado e fácil de aprender."
         />
-        <meta property="og:title" content="Explorar Cursos | Educa+" />
+        <meta property="og:title" content="Explorar Cursos | EduOne" />
         <meta
           property="og:description"
           content="Descubra cursos gratuitos e de alta qualidade em diversas áreas do conhecimento."

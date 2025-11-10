@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/Navbar";
 import { CourseCard } from "@/components/CourseCard";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Edit, Trash } from "lucide-react";
+import { Users, Edit, Trash, UserPlus, UserMinus } from "lucide-react";
+import { Helmet } from "react-helmet-async";
 
 interface Trail {
   id: string;
@@ -29,10 +30,18 @@ export default function TrailDetail() {
   const [trail, setTrail] = useState<Trail | null>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
-  }, []);
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user && id) {
+        checkIfFollowing(user.id, id);
+      }
+    };
+    getUser();
+  }, [id]);
 
   useEffect(() => {
     if (id) {
@@ -40,6 +49,63 @@ export default function TrailDetail() {
       fetchCourses();
     }
   }, [id]);
+
+  const checkIfFollowing = async (userId: string, trailId: string) => {
+    const { data, error } = await supabase
+      .from('trail_followers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('trail_id', trailId)
+      .single();
+    
+    if (!error && data) {
+      setIsFollowing(true);
+    } else {
+      setIsFollowing(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!user) {
+      toast({ title: 'Você precisa estar logado para seguir uma trilha', variant: 'default' });
+      return;
+    }
+
+    try {
+      let result;
+      if (isFollowing) {
+        const { data, error } = await supabase.rpc('unfollow_trail', {
+          p_trail_id: id
+        });
+        if (error) throw error;
+        result = data;
+        setIsFollowing(false);
+        toast({ title: 'Você deixou de seguir esta trilha' });
+      } else {
+        const { data, error } = await supabase.rpc('follow_trail', {
+          p_trail_id: id
+        });
+        if (error) throw error;
+        result = data;
+        setIsFollowing(true);
+        toast({ title: 'Você está seguindo esta trilha!' });
+      }
+
+      // Atualiza o estado local com o follower_count retornado pela função
+      if (result && result.follower_count !== undefined) {
+        setTrail(prev => prev ? {
+          ...prev,
+          follower_count: result.follower_count
+        } : null);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status de seguimento:', error);
+      toast({
+        title: 'Erro ao atualizar status de seguimento',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const fetchTrail = async () => {
     const { data, error } = await supabase
@@ -103,83 +169,160 @@ export default function TrailDetail() {
   const isCreator = user?.id === trail.creator_id;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container py-8 max-w-6xl">
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-3xl mb-2">{trail.title}</CardTitle>
-                {trail.description && (
-                  <p className="text-muted-foreground">{trail.description}</p>
-                )}
-                <div className="flex items-center gap-4 mt-4">
-                  <Link to={`/profile/${trail.creator_id}`} className="flex items-center gap-2 hover:opacity-80">
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage src={trail.profiles.avatar_url || undefined} />
-                      <AvatarFallback>{trail.profiles.username[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">por {trail.profiles.username}</span>
-                  </Link>
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {trail.follower_count} seguidores
-                  </Badge>
+    <>
+    <Helmet>
+      <title>{`${trail.title} | Trilhas EduOne`}</title>
+
+      <meta
+        name="description"
+        content={
+          trail.description?.slice(0, 160) ||
+          "Trilha de aprendizado completa no EduOne."
+        }
+      />
+
+      <meta property="og:title" content={trail.title} />
+      <meta
+        property="og:description"
+        content={
+          trail.description ||
+          "Confira esta trilha completa no EduOne."
+        }
+      />
+
+      <meta
+        property="og:image"
+        content= "/favicon.ico"
+      />
+
+      <meta property="og:type" content="article" />
+      <meta
+        property="og:url"
+        content={`https://educamais1.netlify.app/trail/${id}`}
+      />
+
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LearningPath",
+          name: trail.title,
+          description: trail.description,
+          creator: {
+            "@type": "Person",
+            name: trail.profiles?.username || "Usuário",
+          },
+          url: `https://educamais1.netlify.app/trail/${id}`,
+          numberOfItems: 0,
+          provider: {
+            "@type": "Organization",
+            name: "EduOne",
+            sameAs: "https://educamais1.netlify.app"
+          },
+        })}
+      </script>
+    </Helmet>
+        <div className="min-h-screen bg-background">
+          <Navbar />
+          <div className="container py-8 max-w-6xl">
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-3xl mb-2">{trail.title}</CardTitle>
+                        {trail.description && (
+                          <p className="text-muted-foreground">{trail.description}</p>
+                        )}
+                      </div>
+                      {!isCreator && user && (
+                        <Button 
+                          variant={isFollowing ? "outline" : "default"} 
+                          size="sm" 
+                          onClick={handleFollow}
+                          className="flex items-center gap-1"
+                        >
+                          {isFollowing ? (
+                            <>
+                              <UserMinus className="w-4 h-4" />
+                              Deixar de seguir
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4" />
+                              Seguir trilha
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 mt-4">
+                      <Link to={`/profile/${trail.creator_id}`} className="flex items-center gap-2 hover:opacity-80">
+                        <Avatar className="w-6 h-6">
+                          <AvatarImage src={trail.profiles.avatar_url || undefined} />
+                          <AvatarFallback>{trail.profiles.username[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">por {trail.profiles.username}</span>
+                      </Link>
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {trail.follower_count} {trail.follower_count === 1 ? 'seguidor' : 'seguidores'}
+                      </Badge>
+                    </div>
+                  </div>
+                  {isCreator && (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="icon" asChild>
+                        <Link to={`/trail/${id}/edit`}>
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <Button variant="destructive" size="icon" onClick={handleDelete}>
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
-              {isCreator && (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" asChild>
-                    <Link to={`/trail/${id}/edit`}>
-                      <Edit className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                  <Button variant="destructive" size="icon" onClick={handleDelete}>
-                    <Trash className="w-4 h-4" />
-                  </Button>
+              </CardHeader>
+            </Card>
+
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold">Cursos desta Trilha ({courses.length})</h2>
+              {courses.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <p className="text-muted-foreground">Nenhum curso adicionado ainda</p>
+                    {isCreator && (
+                      <Button asChild className="mt-4">
+                        <Link to={`/trail/${id}/edit`}>Adicionar Cursos</Link>
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {courses.map((course, index) => (
+                    <div key={course.id} className="relative">
+                      <Badge className="absolute top-2 left-2 z-10">{index + 1}</Badge>
+                      <CourseCard
+                        id={course.id}
+                        title={course.title}
+                        description={course.description}
+                        thumbnail={course.thumbnail_url}
+                        author={course.profiles}
+                        category={course.categories}
+                        difficulty_level={course.difficulty_level}
+                        view_count={course.view_count}
+                        like_count={course.like_count}
+                        tags={course.tags}
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </CardHeader>
-        </Card>
-
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold">Cursos desta Trilha ({courses.length})</h2>
-          {courses.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground">Nenhum curso adicionado ainda</p>
-                {isCreator && (
-                  <Button asChild className="mt-4">
-                    <Link to={`/trail/${id}/edit`}>Adicionar Cursos</Link>
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {courses.map((course, index) => (
-                <div key={course.id} className="relative">
-                  <Badge className="absolute top-2 left-2 z-10">{index + 1}</Badge>
-                  <CourseCard
-                    id={course.id}
-                    title={course.title}
-                    description={course.description}
-                    thumbnail={course.thumbnail_url}
-                    author={course.profiles}
-                    category={course.categories}
-                    difficulty_level={course.difficulty_level}
-                    view_count={course.view_count}
-                    like_count={course.like_count}
-                    tags={course.tags}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 }

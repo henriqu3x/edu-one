@@ -838,6 +838,8 @@ export default function Moderation() {
       if (error) throw error;
 
       // Registrar ação de rejeição no histórico
+      const descriptiveReason = `Curso "${course.title}" rejeitado pelo moderador`;
+
       const logDetails = {
         course_title: course.title,
         author_id: course.author_id,
@@ -854,7 +856,7 @@ export default function Moderation() {
           course_id: courseId,
           moderator_id: user.id,
           action: "rejected",
-          reason: reason,
+          reason: descriptiveReason,
           details: JSON.stringify(logDetails)
         });
 

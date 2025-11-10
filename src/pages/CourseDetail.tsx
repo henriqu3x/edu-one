@@ -313,7 +313,7 @@ export default function CourseDetail() {
   return (
     <>
       <Helmet>
-        <title>{`${course.title} | Educa+`}</title>
+        <title>{`${course.title} | EduOne`}</title>
         <meta
           name="description"
           content={
@@ -346,7 +346,7 @@ export default function CourseDetail() {
             description: course.description,
             provider: {
               "@type": "Organization",
-              name: "Educa+",
+              name: "EduOne",
               sameAs: "https://educamais1.netlify.app",
             },
           })}

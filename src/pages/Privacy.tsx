@@ -6,14 +6,14 @@ export default function Privacy() {
       <Navbar />
 
       <div className="container mx-auto px-4 py-16 max-w-4xl">
-        <h1 className="text-4xl font-bold mb-8 text-center">POLÍTICA DE PRIVACIDADE – EDUCA+</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center">POLÍTICA DE PRIVACIDADE – EduOne</h1>
 
         <div className="prose prose-lg max-w-none">
           {/* <p className="text-sm text-muted-foreground mb-8">Última atualização: {new Date().toLocaleDateString('pt-BR')}</p> */}
           <p className="text-sm text-muted-foreground mb-8">Última atualização: 24/10/2025</p>
 
           <p className="mb-6">
-            A presente Política de Privacidade descreve como o Educa+ (“Plataforma”, “nós”, “nosso”) coleta, utiliza, armazena e protege os dados pessoais dos usuários (“Usuário”) que acessam e utilizam o site www.educamais.com e seus serviços associados.
+            A presente Política de Privacidade descreve como o EduOne (“Plataforma”, “nós”, “nosso”) coleta, utiliza, armazena e protege os dados pessoais dos usuários (“Usuário”) que acessam e utilizam o site www.EduOne.com e seus serviços associados.
           </p>
 
           <p className="mb-6">
@@ -25,13 +25,13 @@ export default function Privacy() {
             Os dados pessoais são controlados por:
           </p>
           <div className="mb-6 p-4 bg-muted rounded">
-            <p><strong>Educa+</strong></p>
+            <p><strong>EduOne</strong></p>
             <p>CNPJ: [A ser definido]</p>
-            <p>E-mail: contato@educamais.com</p>
+            <p>E-mail: contato@EduOne.com</p>
             <p>Endereço: Fortaleza/CE</p>
           </div>
           <p className="mb-6">
-            Para fins da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados – LGPD), o Educa+ atua como controlador dos dados pessoais tratados por meio da Plataforma.
+            Para fins da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados – LGPD), o EduOne atua como controlador dos dados pessoais tratados por meio da Plataforma.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">2. Dados pessoais coletados</h2>
@@ -66,7 +66,7 @@ export default function Privacy() {
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">4. Armazenamento em provedores de nuvem (Cloudinary)</h2>
           <p className="mb-6">
-            Os vídeos e arquivos enviados são armazenados em servidores do Cloudinary, que atua como operador de dados em nome do Educa+.
+            Os vídeos e arquivos enviados são armazenados em servidores do Cloudinary, que atua como operador de dados em nome do EduOne.
           </p>
           <p className="mb-6">
             O Cloudinary é um provedor internacional de armazenamento em nuvem que adota padrões avançados de segurança e certificações de conformidade (ISO, GDPR).
@@ -75,7 +75,7 @@ export default function Privacy() {
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">5. Compartilhamento de dados</h2>
           <p className="mb-6">
-            O Educa+ não vende nem compartilha dados pessoais com terceiros, exceto:
+            O EduOne não vende nem compartilha dados pessoais com terceiros, exceto:
           </p>
           <ul className="list-disc pl-6 mb-6 space-y-2">
             <li>Quando necessário para prestadores de serviços essenciais (ex.: Cloudinary, provedores de hospedagem, e-mail ou autenticação);</li>
@@ -95,7 +95,7 @@ export default function Privacy() {
             <li>O conteúdo não infringe direitos de terceiros, nem viola leis ou políticas da Plataforma.</li>
           </ul>
           <p className="mb-6">
-            O Educa+ não se responsabiliza por vídeos, imagens ou dados pessoais de terceiros incluídos nos envios feitos pelos Usuários.
+            O EduOne não se responsabiliza por vídeos, imagens ou dados pessoais de terceiros incluídos nos envios feitos pelos Usuários.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">7. Segurança da informação</h2>
@@ -125,7 +125,7 @@ export default function Privacy() {
             <li>Solicitar informações sobre o compartilhamento de dados.</li>
           </ul>
           <p className="mb-6">
-            Os pedidos devem ser enviados para contato@educamais.com, com resposta no prazo legal de até 15 dias.
+            Os pedidos devem ser enviados para contato@EduOne.com, com resposta no prazo legal de até 15 dias.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">9. Exclusão de dados e vídeos</h2>
@@ -158,8 +158,8 @@ export default function Privacy() {
           <p className="mb-4">Em caso de dúvidas, solicitações ou reclamações, entre em contato com nosso Encarregado de Proteção de Dados (DPO):</p>
           <div className="mb-6 p-4 bg-muted rounded">
             <p><strong>Nome:</strong> Luiz Henrique</p>
-            <p><strong>E-mail:</strong> contato@educamais.com</p>
-            <p><strong>Assunto:</strong> "Proteção de Dados – Educa+"</p>
+            <p><strong>E-mail:</strong> contato@EduOne.com</p>
+            <p><strong>Assunto:</strong> "Proteção de Dados – EduOne"</p>
           </div>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">13. Legislação aplicável</h2>
@@ -169,7 +169,7 @@ export default function Privacy() {
           </p>
 
           <div className="mt-12 p-6 bg-muted rounded-lg text-center">
-            <p className="text-lg font-semibold">📍 Educa+ – Todos os direitos reservados © {new Date().getFullYear()}</p>
+            <p className="text-lg font-semibold">📍 EduOne – Todos os direitos reservados © {new Date().getFullYear()}</p>
           </div>
         </div>
       </div>

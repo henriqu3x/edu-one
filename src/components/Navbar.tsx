@@ -64,9 +64,11 @@ export const Navbar = () => {
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Educa+
-          </span>
+          <img 
+              src="/logo_b.png"       
+              alt="EduOne Logo"
+              className="h-10 w-auto" 
+            />
         </Link>
 
         <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
