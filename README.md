@@ -1,10 +1,10 @@
-# Educa+ - Plataforma de Aprendizado Colaborativo
+# EduOne - Plataforma de Cursos Gratuitos
 
 Uma plataforma educacional colaborativa onde usuários podem compartilhar e descobrir minicursos gratuitos, dicas de estudo e conteúdos criados pela comunidade.
 
-## Sobre o Educa+
+## Sobre o EduOne
 
-O Educa+ é uma plataforma desenvolvida para democratizar o acesso ao conhecimento, permitindo que qualquer pessoa possa compartilhar seu saber através de minicursos interativos, trilhas de aprendizado e discussões no fórum. Nossa missão é criar uma comunidade de aprendizado contínuo e colaborativo.
+O EduOne é uma plataforma desenvolvida para democratizar o acesso ao conhecimento, permitindo que qualquer pessoa possa compartilhar seu saber através de minicursos interativos, trilhas de aprendizado e discussões no fórum. Nossa missão é criar uma comunidade de aprendizado contínuo e colaborativo.
 
 ## Funcionalidades Principais
 
