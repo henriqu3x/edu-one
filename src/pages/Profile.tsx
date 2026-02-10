@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { UserPlus, UserMinus } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { EditProfileDialog } from "@/components/EditProfileDialog";
+import { Edit2 } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -54,6 +56,7 @@ export default function Profile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setCurrentUser(user));
@@ -141,6 +144,14 @@ export default function Profile() {
         variant: "destructive"
       });
     }
+  };
+
+  const handleProfileUpdated = () => {
+    fetchProfile();
+    toast({
+      title: "Perfil atualizado",
+      description: "Suas informações foram atualizadas com sucesso.",
+    });
   };
 
   const fetchProfile = async () => {
@@ -244,7 +255,7 @@ export default function Profile() {
 
   const fetchCreatedTrails = async () => {
     if (!id) return;
-    
+
     try {
       const { data, error } = await supabase
         .from("learning_trails")
@@ -271,7 +282,7 @@ export default function Profile() {
             is_verified_author: trail.profiles.is_verified_author || false
           } : undefined
         }));
-        
+
         setCreatedTrails(formattedData);
       }
     } catch (error) {
@@ -281,7 +292,7 @@ export default function Profile() {
 
   const fetchFollowedTrails = async () => {
     if (!id) return;
-    
+
     try {
       // Usando a tabela trail_followers diretamente com um join explícito
       const { data: trailFollows, error: followsError } = await supabase
@@ -305,7 +316,7 @@ export default function Profile() {
         const trailsData = trailFollows.map(trail => {
           // Acessa os dados da trilha através da relação learning_trails
           const trailData = trail.learning_trails as any; // Usando any temporariamente
-          
+
           return {
             id: trailData.id,
             title: trailData.title,
@@ -322,7 +333,7 @@ export default function Profile() {
             } : undefined
           };
         });
-        
+
         setFollowedTrails(trailsData);
       } else {
         setFollowedTrails([]);
@@ -534,86 +545,77 @@ export default function Profile() {
         <meta property="og:image" content="https://educamais1.netlify.app/favicon.ico" />
       </Helmet>
 
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container py-8 max-w-6xl">
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-6">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold">{profile.username}</h1>
-                  {profile.is_verified_author && (
-                    <Badge>✓ Verificado</Badge>
-                  )}
-                  <Badge variant="secondary">Nível {profile.level}</Badge>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-8 max-w-6xl">
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-6 justify-between">
+                <div className="flex items-start gap-6">
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={profile.avatar_url || undefined} />
+                    <AvatarFallback className="text-2xl">{profile.username[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-bold">{profile.username}</h1>
+                      {profile.is_verified_author && (
+                        <Badge>✓ Verificado</Badge>
+                      )}
+                      <Badge variant="secondary">Nível {profile.level}</Badge>
+                    </div>
+                    {profile.full_name && (
+                      <p className="text-muted-foreground">{profile.full_name}</p>
+                    )}
+                    {profile.bio && (
+                      <p className="mt-2">{profile.bio}</p>
+                    )}
+                    <div className="flex items-center gap-4 mt-4 text-sm">
+                      <span><strong>{followerCount}</strong> Seguidores</span>
+                      <span><strong>{followingCount}</strong> Seguindo</span>
+                      <span><strong>{profile.total_points}</strong> Pontos</span>
+                    </div>
+                    {!isOwnProfile && (
+                      <Button onClick={handleFollow} className="mt-4" variant={isFollowing ? "outline" : "default"}>
+                        {isFollowing ? <UserMinus className="w-4 h-4 mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+                        {isFollowing ? "Deixar de seguir" : "Seguir"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                {profile.full_name && (
-                  <p className="text-muted-foreground">{profile.full_name}</p>
-                )}
-                {profile.bio && (
-                  <p className="mt-2">{profile.bio}</p>
-                )}
-                <div className="flex items-center gap-4 mt-4 text-sm">
-                  <span><strong>{followerCount}</strong> Seguidores</span>
-                  <span><strong>{followingCount}</strong> Seguindo</span>
-                  <span><strong>{profile.total_points}</strong> Pontos</span>
-                </div>
-                {!isOwnProfile && (
-                  <Button onClick={handleFollow} className="mt-4" variant={isFollowing ? "outline" : "default"}>
-                    {isFollowing ? <UserMinus className="w-4 h-4 mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-                    {isFollowing ? "Deixar de seguir" : "Seguir"}
+                {isOwnProfile && (
+                  <Button variant="outline" onClick={() => setIsEditProfileOpen(true)}>
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Editar Perfil
                   </Button>
                 )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              {isOwnProfile && (
+                <EditProfileDialog
+                  profile={profile}
+                  open={isEditProfileOpen}
+                  onOpenChange={setIsEditProfileOpen}
+                  onProfileUpdated={handleProfileUpdated}
+                />
+              )}
+            </CardContent>
+          </Card>
 
-        <Tabs defaultValue="courses">
-          <TabsList className="w-full overflow-x-auto">
-            <TabsTrigger value="courses" className="flex-1">{isMobile ? "Cursos" : "Cursos Criados"} ({courses.length})</TabsTrigger>
-            {isOwnProfile && <TabsTrigger value="saved" className="flex-1">Salvos ({savedCourses.length})</TabsTrigger>}
-            <TabsTrigger value="created-trails" className="flex-1">Minhas Trilhas ({createdTrails.length})</TabsTrigger>
-            <TabsTrigger value="followed-trails" className="flex-1">Trilhas Seguidas ({followedTrails.length})</TabsTrigger>
-            {isOwnProfile && <TabsTrigger value="following" className="flex-1">{isMobile ? "Seguindo" : "Criadores"} ({followedCreators.length})</TabsTrigger>}
-          </TabsList>
+          <Tabs defaultValue="courses">
+            <TabsList className="w-full overflow-x-auto">
+              <TabsTrigger value="courses" className="flex-1">{isMobile ? "Cursos" : "Cursos Criados"} ({courses.length})</TabsTrigger>
+              {isOwnProfile && <TabsTrigger value="saved" className="flex-1">Salvos ({savedCourses.length})</TabsTrigger>}
+              <TabsTrigger value="created-trails" className="flex-1">Minhas Trilhas ({createdTrails.length})</TabsTrigger>
+              <TabsTrigger value="followed-trails" className="flex-1">Trilhas Seguidas ({followedTrails.length})</TabsTrigger>
+              {isOwnProfile && <TabsTrigger value="following" className="flex-1">{isMobile ? "Seguindo" : "Criadores"} ({followedCreators.length})</TabsTrigger>}
+            </TabsList>
 
-          <TabsContent value="courses" className="space-y-4 mt-6">
-            {courses.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">Nenhum curso criado ainda</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {courses.map(course => (
-                  <CourseCard
-                    key={course.id}
-                    id={course.id}
-                    title={course.title}
-                    description={course.description}
-                    thumbnail={course.thumbnail_url}
-                    author={course.profiles}
-                    category={course.categories}
-                    difficulty_level={course.difficulty_level}
-                    view_count={course.view_count}
-                    like_count={course.like_count}
-                    tags={course.tags}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {isOwnProfile && (
-            <TabsContent value="saved" className="space-y-4 mt-6">
-              {savedCourses.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Nenhum curso salvo ainda</p>
+            <TabsContent value="courses" className="space-y-4 mt-6">
+              {courses.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nenhum curso criado ainda</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {savedCourses.map(course => (
+                  {courses.map(course => (
                     <CourseCard
                       key={course.id}
                       id={course.id}
@@ -631,162 +633,187 @@ export default function Profile() {
                 </div>
               )}
             </TabsContent>
-          )}
 
-          <TabsContent value="created-trails" className="space-y-4 mt-6">
-            {createdTrails.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  {isOwnProfile 
-                    ? "Você ainda não criou nenhuma trilha" 
-                    : "Este usuário ainda não criou nenhuma trilha"}
-                </p>
-                {isOwnProfile && (
-                  <Button asChild>
-                    <Link to="/trail/new">Criar primeira trilha</Link>
-                  </Button>
+            {isOwnProfile && (
+              <TabsContent value="saved" className="space-y-4 mt-6">
+                {savedCourses.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Nenhum curso salvo ainda</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {savedCourses.map(course => (
+                      <CourseCard
+                        key={course.id}
+                        id={course.id}
+                        title={course.title}
+                        description={course.description}
+                        thumbnail={course.thumbnail_url}
+                        author={course.profiles}
+                        category={course.categories}
+                        difficulty_level={course.difficulty_level}
+                        view_count={course.view_count}
+                        like_count={course.like_count}
+                        tags={course.tags}
+                      />
+                    ))}
+                  </div>
                 )}
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {createdTrails.map(trail => (
-                  <Link key={trail.id} to={`/trail/${trail.id}`} className="block">
-                    <Card className="hover:shadow-lg transition-shadow h-full">
-                      <div className="p-6">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="text-lg font-semibold">{trail.title}</h3>
-                            {trail.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {trail.description.length > 120 
-                                  ? `${trail.description.substring(0, 120)}...` 
-                                  : trail.description}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                              <span>Status: </span>
-                              <Badge variant="outline" className="text-xs">
-                                {trail.status === 'draft' ? 'Rascunho' : 
-                                 trail.status === 'published' ? 'Arquivado' : 'Publicado'}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-xs text-muted-foreground">
-                              Criado em {new Date(trail.created_at).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
+              </TabsContent>
             )}
-          </TabsContent>
 
-          <TabsContent value="followed-trails" className="space-y-4 mt-6">
-            {followedTrails.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  {isOwnProfile 
-                    ? "Você ainda não está seguindo nenhuma trilha" 
-                    : "Este usuário ainda não está seguindo nenhuma trilha"}
-                </p>
-                {isOwnProfile && (
-                  <Button asChild variant="outline">
-                    <Link to="/trails">Explorar trilhas</Link>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {followedTrails.map(trail => (
-                  <Link key={trail.id} to={`/trail/${trail.id}`} className="block">
-                    <Card className="hover:shadow-lg transition-shadow h-full">
-                      <div className="p-6">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="text-lg font-semibold">{trail.title}</h3>
-                            {trail.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {trail.description.length > 120 
-                                  ? `${trail.description.substring(0, 120)}...` 
-                                  : trail.description}
-                              </p>
-                            )}
-                            {trail.profiles && (
-                              <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage src={trail.profiles.avatar_url || undefined} />
-                                  <AvatarFallback>{trail.profiles.username?.[0]}</AvatarFallback>
-                                </Avatar>
-                                <span>por {trail.profiles.username}</span>
-                                {trail.profiles.is_verified_author && (
-                                  <Badge variant="secondary" className="text-xs">✓ Verificado</Badge>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <Badge variant="outline" className="mb-2">
-                              {trail.status === 'draft' ? 'Rascunho' : 
-                               trail.status === 'published' ? 'Arquivado' : 'Publicado'}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              Trilha Criada Em: {new Date(trail.created_at).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {isOwnProfile && (
-            <TabsContent value="following" className="space-y-4 mt-6">
-              {followedCreators.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Você ainda não segue nenhum criador</p>
+            <TabsContent value="created-trails" className="space-y-4 mt-6">
+              {createdTrails.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    {isOwnProfile
+                      ? "Você ainda não criou nenhuma trilha"
+                      : "Este usuário ainda não criou nenhuma trilha"}
+                  </p>
+                  {isOwnProfile && (
+                    <Button asChild>
+                      <Link to="/trail/new">Criar primeira trilha</Link>
+                    </Button>
+                  )}
+                </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {followedCreators.map(creator => (
-                    <Card key={creator.id} className="hover:shadow-lg transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={creator.avatar_url || undefined} />
-                            <AvatarFallback>{creator.username[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">{creator.username}</h3>
-                              {creator.is_verified_author && (
-                                <Badge variant="secondary" className="text-xs">✓</Badge>
+                <div className="grid gap-4">
+                  {createdTrails.map(trail => (
+                    <Link key={trail.id} to={`/trail/${trail.id}`} className="block">
+                      <Card className="hover:shadow-lg transition-shadow h-full">
+                        <div className="p-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <h3 className="text-lg font-semibold">{trail.title}</h3>
+                              {trail.description && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {trail.description.length > 120
+                                    ? `${trail.description.substring(0, 120)}...`
+                                    : trail.description}
+                                </p>
                               )}
+                              <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                                <span>Status: </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {trail.status === 'draft' ? 'Rascunho' :
+                                    trail.status === 'published' ? 'Arquivado' : 'Publicado'}
+                                </Badge>
+                              </div>
                             </div>
-                            {creator.lastContent && (
-                              <p className="text-sm text-muted-foreground">
-                                Último {creator.lastContent.type === 'course' ? 'curso' : 'trilha'}: {creator.lastContent.title}
-                              </p>
-                            )}
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs text-muted-foreground">
+                                Criado em {new Date(trail.created_at).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <Button asChild variant="outline" size="sm" className="w-full">
-                          <Link to={`/profile/${creator.id}`}>Ver cursos</Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
+                      </Card>
+                    </Link>
                   ))}
                 </div>
               )}
             </TabsContent>
-          )}
-        </Tabs>
-      </div>
-    </div>
+
+            <TabsContent value="followed-trails" className="space-y-4 mt-6">
+              {followedTrails.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">
+                    {isOwnProfile
+                      ? "Você ainda não está seguindo nenhuma trilha"
+                      : "Este usuário ainda não está seguindo nenhuma trilha"}
+                  </p>
+                  {isOwnProfile && (
+                    <Button asChild variant="outline">
+                      <Link to="/trails">Explorar trilhas</Link>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {followedTrails.map(trail => (
+                    <Link key={trail.id} to={`/trail/${trail.id}`} className="block">
+                      <Card className="hover:shadow-lg transition-shadow h-full">
+                        <div className="p-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <h3 className="text-lg font-semibold">{trail.title}</h3>
+                              {trail.description && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {trail.description.length > 120
+                                    ? `${trail.description.substring(0, 120)}...`
+                                    : trail.description}
+                                </p>
+                              )}
+                              {trail.profiles && (
+                                <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={trail.profiles.avatar_url || undefined} />
+                                    <AvatarFallback>{trail.profiles.username?.[0]}</AvatarFallback>
+                                  </Avatar>
+                                  <span>por {trail.profiles.username}</span>
+                                  {trail.profiles.is_verified_author && (
+                                    <Badge variant="secondary" className="text-xs">✓ Verificado</Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <Badge variant="outline" className="mb-2">
+                                {trail.status === 'draft' ? 'Rascunho' :
+                                  trail.status === 'published' ? 'Arquivado' : 'Publicado'}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                Trilha Criada Em: {new Date(trail.created_at).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {isOwnProfile && (
+              <TabsContent value="following" className="space-y-4 mt-6">
+                {followedCreators.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Você ainda não segue nenhum criador</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {followedCreators.map(creator => (
+                      <Card key={creator.id} className="hover:shadow-lg transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="w-12 h-12">
+                              <AvatarImage src={creator.avatar_url || undefined} />
+                              <AvatarFallback>{creator.username[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold">{creator.username}</h3>
+                                {creator.is_verified_author && (
+                                  <Badge variant="secondary" className="text-xs">✓</Badge>
+                                )}
+                              </div>
+                              {creator.lastContent && (
+                                <p className="text-sm text-muted-foreground">
+                                  Último {creator.lastContent.type === 'course' ? 'curso' : 'trilha'}: {creator.lastContent.title}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Button asChild variant="outline" size="sm" className="w-full">
+                            <Link to={`/profile/${creator.id}`}>Ver cursos</Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
+          </Tabs>
+        </div>
+      </div >
     </>
   );
 }
