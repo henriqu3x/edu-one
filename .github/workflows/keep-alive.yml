@@ -1,0 +1,15 @@
+name: Keep Supabase Awake
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *'   # a cada 3 dias (UTC)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Supabase Edge Function
+        run: |
+          curl -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          https://ukdxhdxgijlnuuiaqwsw.supabase.co/functions/v1/ping
