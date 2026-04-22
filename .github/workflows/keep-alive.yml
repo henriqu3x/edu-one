@@ -2,14 +2,37 @@ name: Keep Supabase Awake
 
 on:
   schedule:
-    - cron: '0 0 */3 * *'   # a cada 3 dias (UTC)
+    - cron: '0 0 */3 * *'
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Call Supabase Edge Function
+      - name: Checkout (opcional)
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install playwright
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run browser ping
         run: |
-          curl -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-          https://ukdxhdxgijlnuuiaqwsw.supabase.co/functions/v1/ping
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            await page.goto('https://eduone1.netlify.app', { waitUntil: 'networkidle', timeout: 60000 });
+            console.log('Título:', await page.title());
+            await browser.close();
+          })();
+          "
